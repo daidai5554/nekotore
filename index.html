@@ -607,9 +607,6 @@ function fresh() { return { v: 1, profile: null, program: null, history: [], wei
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { } return fresh(); }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
 let S = load();
-if (S.profile && S.profile.cat.name === 'ムギ') S.profile.cat.name = 'にゃんだ';
-if (S.profile) giftBond();
-if (S.acc) { const m = { collar: 'collar', band: 'band', glasses: 'glasses', crown: 'crown' }[S.acc]; if (m) { if (!S.items.includes(m)) S.items.push(m); S.equip[GEARM[m].slot] = m; } delete S.acc; }
 let view = S.profile ? (S.session ? 'session' : 'home') : 'onboard';
 let step = 0, draft = null, editing = false, obErr = '', modal = null, homeMsg = null, homeMood = 'normal';
 let calOff = 0, openHow = null, sessMsg = '', rpeMsg = null, backupText = '';
@@ -1974,7 +1971,7 @@ const A = {
     try {
       const o = JSON.parse($('#backup').value.trim());
       if (!o || o.v !== 1 || !o.profile || !o.program) throw 0;
-      confirmBox('今のデータを上書きして読み込みますか？', '読み込む', () => { S = Object.assign(fresh(), o); backupText = ''; save(); toast('読み込みました'); go('home'); });
+      confirmBox('今のデータを上書きして読み込みますか？', '読み込む', () => { S = Object.assign(fresh(), o); migrate(); backupText = ''; save(); toast('読み込みました'); go('home'); });
     } catch (e) { toast('データの形式が正しくありません。コピーした文字を全部貼りつけてください'); }
   },
   reset: () => confirmBox('記録・メニュー・猫のなかよし度がすべて消えます。元には戻せません。', '消す', () => { S = fresh(); save(); draft = null; step = 0; editing = false; go('onboard'); }),
@@ -2027,7 +2024,18 @@ document.addEventListener('input', e => {
   }
 });
 
-if (S.profile && S.program && S.program.ver !== PROGRAM_VER && !S.session) { S.program = buildProgram(S.profile); S.programNote = 1; save(); }
+// 古い版のデータを今の形にそろえる（起動時と、データの読みこみ時）
+function migrate() {
+  if (S.profile && S.profile.cat.name === 'ムギ') S.profile.cat.name = 'にゃんだ';
+  if (S.profile && S.profile.cat.coat) delete S.profile.cat.coat;
+  if (S.acc) { const m = { collar: 'collar', band: 'band', glasses: 'glasses', crown: 'crown' }[S.acc]; if (m) { if (!S.items.includes(m)) S.items.push(m); S.equip[GEARM[m].slot] = m; } delete S.acc; }
+  S.items = S.items.filter(id => GEARM[id]);
+  for (const k in S.equip) if (!GEARM[S.equip[k]]) delete S.equip[k];
+  if (S.profile) giftBond();
+  if (S.profile && S.program && S.program.ver !== PROGRAM_VER && !S.session) { S.program = buildProgram(S.profile); S.programNote = 1; }
+  save();
+}
+migrate();
 render();
 try { if ('serviceWorker' in navigator && location.protocol === 'https:' && $('link[rel="manifest"]')) navigator.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
 </script>
