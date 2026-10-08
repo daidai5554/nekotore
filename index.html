@@ -308,9 +308,11 @@ textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
 .fig .pwl{fill:none;stroke:var(--paw);stroke-width:3}
 .fig .pb{fill:none;stroke:var(--paw);stroke-width:2.5;stroke-linecap:round}
 .dcd{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-size:72px;font-weight:600;color:var(--paw);background:color-mix(in srgb,var(--bg) 70%,transparent)}
-.dphase{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-height:32px}
+.dphase{display:flex;align-items:center;gap:10px;min-height:32px;flex-wrap:wrap}
 .dlabel{font-family:var(--f-display);font-size:20px;font-weight:900;min-width:0}
-.dsec{font-size:24px;font-weight:600;color:var(--paw)}
+.dsec{font-size:24px;font-weight:600;color:var(--paw);margin-left:auto}
+.dbreath{font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;background:var(--surface-2);white-space:nowrap}
+.dbreath.out{background:var(--paw-soft)}
 .dstrip{display:flex;gap:3px;height:8px}
 .dstrip i{display:block;background:var(--surface-2);border-radius:99px;overflow:hidden;min-width:4px}
 .dstrip b{display:block;height:100%;width:0;background:var(--paw)}
@@ -1064,6 +1066,21 @@ const MOTMAP = {
   hang_knee: 'hangknee', calf_raise: 'calf', db_calf: 'dbcalf', step_jack: 'stepjack', high_knee: 'highknee', jumping_jack: 'jack', mountain: 'mountain', rope: 'rope', burpee: 'burpee'
 };
 
+// 呼吸：力を出す動き（持ち上げる・押す・引く・立つ）で吐き、戻す動き（下ろす・しゃがむ）で吸う。キープ中は止めずに続ける
+const BREATH_FIRST = ['押し', '引き', 'バーに近づけ'];   // 「押し戻す」「引き下ろす」など、力を出す動きを優先
+const BREATH_IN = ['下ろ', 'しゃがむ', '落と', '近づけ', '座', '戻す', 'もどす', 'お尻を後ろへ引く', '脚を後ろへ引く', '閉じる', '振り戻す', 'よせる', '下り', '転がす', '着地'];
+const BREATH_OUT = ['上げ', '押', '立', '引', '巻き上げ', 'のばす', '開く', '浮かせ', 'ジャンプ', '戻る', 'のせた', '寄せる', 'しめる', 'のぞきこむ'];
+const BREATH_RHYTHM = ['stepjack', 'jack', 'highknee', 'mountain', 'rope', 'burpee', 'sidewalk'];
+function breath(label, hold, id) {
+  if (!label) return '';
+  if (BREATH_RHYTHM.includes(id)) return 'リズムよく呼吸';
+  if (id === 'negpull') return /下り/.test(label) ? 'ゆっくり吐く' : '吸う';
+  if (hold || /キープ|止め|胸を張る|のばしきる/.test(label)) return '止めずに呼吸';
+  if (BREATH_FIRST.some(w => label.includes(w))) return '吐く';
+  if (BREATH_IN.some(w => label.includes(w))) return '吸う';
+  if (BREATH_OUT.some(w => label.includes(w))) return '吐く';
+  return '';
+}
 const vec = (a, l) => [Math.sin(a * Math.PI / 180) * l, Math.cos(a * Math.PI / 180) * l];
 const addv = (p, a, l) => { const d = vec(a, l); return [p[0] + d[0], p[1] + d[1]]; };
 function ik(A, T, l1, l2, bend) {
@@ -1147,7 +1164,7 @@ function demoHTML(e, it) {
   const tempo = m.ph.filter(p => p[2]).map(p => `${p[2]}${p[3] === 'k' ? '' : ` ${+p[1].toFixed(1)}秒`}`).join(' → ');
   return `<section class="demo card" data-mot="${id}" data-ex="${e.id}" data-target="${target}">
     <div class="figwrap">${figSVG(m)}<div class="dcd" hidden></div></div>
-    <div class="dphase"><b class="dlabel">&nbsp;</b><span class="dsec num"></span></div>
+    <div class="dphase"><b class="dlabel">&nbsp;</b><span class="dbreath" hidden></span><span class="dsec num"></span></div>
     <div class="dstrip">${m.ph.map(p => `<i style="flex:${p[1]}"><b></b></i>`).join('')}</div>
     <p class="small muted">リズム：${tempo}${e.side ? '（左右それぞれ）' : ''}</p>
     <div class="dctl">${target ? `<button class="btn primary sm" data-act="pace">いっしょにやる（${target}回）</button>` : ''}
@@ -1179,13 +1196,15 @@ function demoLoop(now) {
   for (; i < m.ph.length - 1 && t >= acc + m.ph[i][1]; i++) acc += m.ph[i][1];
   const p = m.ph[i], f = clamp((t - acc) / p[1], 0, 1), from = m.P[m.ph[(i - 1 + m.ph.length) % m.ph.length][0]], to = m.P[p[0]];
   drawFig(el, m, lerpP(from, to, f * f * (3 - 2 * f)));
-  const q = el._u || (el._u = { lbl: el.querySelector('.dlabel'), sec: el.querySelector('.dsec'), rep: el.querySelector('.drep'), cd: el.querySelector('.dcd'), segs: [...el.querySelectorAll('.dstrip b')], btn: el.querySelector('[data-act="pace"]') });
+  const q = el._u || (el._u = { br: el.querySelector('.dbreath'), lbl: el.querySelector('.dlabel'), sec: el.querySelector('.dsec'), rep: el.querySelector('.drep'), cd: el.querySelector('.dcd'), segs: [...el.querySelectorAll('.dstrip b')], btn: el.querySelector('[data-act="pace"]') });
   const active = DM.mode === 'pace' && !cd, fin = DM.mode === 'fin';
   if (fin) { label = '目標回数まで できた！'; rep = `${DM.target} / ${DM.target}回`; }
   else if (!cd) label = p[2] || (m.ph[(i - 1 + m.ph.length) % m.ph.length][2] || '');
   const still = DM.mode === 'demo' && !DM.play;
   if (still) label = '「お手本を動かす」で再生';
   setTxt(q.lbl, label || ' ');
+  const prevPh = m.ph[(i - 1 + m.ph.length) % m.ph.length], br = cd || fin || still ? '' : breath(p[2] || prevPh[2], (p[2] ? p : prevPh)[3] === 'k', el.dataset.mot);
+  q.br.hidden = !br; setTxt(q.br, br); q.br.className = 'dbreath' + (br.includes('吐') ? ' out' : br === '吸う' ? ' in' : '');
   setTxt(q.sec, !still && !cd && !fin && p[2] && p[1] >= 1 ? `${Math.ceil(p[1] * (1 - f))}` : '');
   setTxt(q.rep, rep);
   q.cd.hidden = !cd; if (cd) setTxt(q.cd, String(cd));
@@ -1196,7 +1215,8 @@ function demoLoop(now) {
     if (k !== DM.phk) {
       DM.phk = k;
       if (DM.sound) beep(i === 0 ? 880 : 620, .07);
-      if (i === 0 && r > 1) speak(String(r - 1)); else if (p[2] && p[1] >= .8) speak(p[2]);
+      const b = breath(p[2], p[3] === 'k', el.dataset.mot), bw = b === '吐く' ? '、はいて' : b === '吸う' ? '、すって' : '';
+      if (i === 0 && r > 1) speak(String(r - 1)); else if (p[2] && p[1] >= .8) speak(p[2] + bw);
     }
   }
 }
