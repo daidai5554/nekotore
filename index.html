@@ -319,6 +319,13 @@ textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
 .dpts{margin:0;padding-left:1.3em;font-size:14px;display:flex;flex-direction:column;gap:2px}
 .dpts .ng{color:var(--paw);font-weight:700;list-style:none;margin-left:-1.3em}
 
+.vol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.vol li{display:grid;grid-template-columns:4.5em 1fr 2.5em auto;gap:8px;align-items:center;font-size:13px}
+.vb{position:relative;height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.vb i{position:absolute;left:0;top:0;bottom:0;background:var(--paw);border-radius:99px;opacity:.85}
+.vb b{position:absolute;top:0;bottom:0;border:2px solid var(--ok);border-radius:99px}
+.vn{text-align:right;font-weight:600}
+
 /* modal / toast */
 .modal{position:fixed;inset:0;background:var(--shade);z-index:60;display:grid;place-items:center;padding:16px}
 .modal .card{max-width:400px;width:100%}
@@ -627,26 +634,34 @@ function workSec(it, e = EXM[it.id], reps = it.hi) { const per = it.sec ? (reps 
 // 1種目の所要時間：セット×動作＋セット間の休憩（最後のセットの後は次の種目へ）＋準備45秒
 function estSec(it, sets = it.sets) { return sets * workSec(it, EXM[it.id], it.sec || it.hi) + (sets - 1) * it.rest + 45; }
 // 運動強度（METs）。Compendium of Physical Activities（2024）の値を参考にした目安
-const MET = { rest: 1.5, warm: 3.0 };
-function metOf(e) {
-  const o = { rope: 11.0, burpee: 8.0, jumping_jack: 7.7, mountain: 8.0, high_knee: 6.0, step_jack: 4.0, kb_swing: 8.0, bb_squat: 6.0, bb_dl: 6.0 };
+// 筋トレの値は「休憩を含めたトレーニング全体の平均」なので、休憩込みの時間にかける。有酸素は動作中だけにかけ、休憩は2.0METs
+const MET = { rest: 1.5, warm: 3.0, cardioRest: 2.0 };
+function metOf(e, goal = S.profile ? S.profile.goal : 'health') {
+  const o = { rope: 11.0, burpee: 8.0, jumping_jack: 7.7, mountain: 8.0, high_knee: 6.0, step_jack: 4.0, kb_swing: 6.0 };
   if (o[e.id]) return o[e.id];
-  if (e.w) return 5.0;                                        // フリーウェイト（中〜高強度）
-  if (['core', 'posture', 'glute', 'calf'].includes(e.p)) return 2.8;   // 軽めの自重（腹筋・小さな動き）
-  return 3.8;                                                 // 自重トレーニング（中強度）
+  if (e.w) return goal === 'muscle' ? 5.0 : goal === 'diet' ? 4.5 : 3.5;   // ウエイト：中強度3.5〜高強度6.0
+  if (['core', 'posture', 'glute', 'calf'].includes(e.p)) return 2.8;      // 軽めの自重（腹筋・小さな動き）
+  return 3.8;                                                               // 自重トレーニング（中強度）
 }
-// 予定メニューの消費カロリー（kcal）：動作中はMETs、休憩は1.5METs、ウォームアップ3METs
+// 予定メニューの消費カロリー（kcal）
 function dayKcal(d, p = S.profile) {
-  const warm = p.minutes <= 10 ? 120 : 180;
-  let metSec = warm * MET.warm;
-  d.items.forEach(it => { const e = EXM[it.id], w = it.sets * workSec(it, e, it.sec || it.hi); metSec += w * metOf(e) + (estSec(it) - w) * MET.rest; });
+  let metSec = (p.minutes <= 10 ? 120 : 180) * MET.warm;
+  d.items.forEach(it => {
+    const e = EXM[it.id], t = estSec(it);
+    if (e.p === 'cardio') { const w = it.sets * workSec(it, e, it.sec || it.hi); metSec += w * metOf(e, p.goal) + (t - w) * MET.cardioRest; }
+    else metSec += t * metOf(e, p.goal);
+  });
   return Math.round(metSec / 3600 * p.weight);
 }
-// 実際のトレーニングの消費カロリー：記録した回数・秒数から動作時間を出し、残りを休憩として計算
+// 実際のトレーニングの消費カロリー：有酸素は記録した秒数（＋休憩）、残りの時間を筋トレ種目の平均METsで計算
 function sessionKcal(items, dur, p = S.profile) {
-  let work = 0, metSec = 0;
-  items.forEach(it => { const e = EXM[it.id]; it.sets.forEach(x => { const w = workSec({ id: it.id, sec: e.unit === 'sec' ? x.r : null }, e, x.r); work += w; metSec += w * metOf(e); }); });
-  return Math.round((metSec + Math.max(0, dur - work) * MET.rest) / 3600 * p.weight);
+  let cardio = 0, cardioT = 0, setN = 0, metSum = 0;
+  items.forEach(it => { const e = EXM[it.id]; it.sets.forEach(x => {
+    if (e.p === 'cardio') { const w = workSec({ id: it.id, sec: e.unit === 'sec' ? x.r : null }, e, x.r); cardio += w * metOf(e, p.goal) + 30 * MET.cardioRest; cardioT += w + 30; }
+    else { setN++; metSum += metOf(e, p.goal); }
+  }); });
+  const rest = Math.max(0, dur - cardioT), m = setN ? metSum / setN : MET.rest;
+  return Math.round((cardio + rest * m) / 3600 * p.weight);
 }
 // 重さのはじめの目安（体重比）。器具1つあたり。安全のため控えめにし、10回が少しきついところで調整してもらう
 const START_W = { goblet_squat: .15, db_rdl: .1, db_bench: .08, db_floor: .08, db_press: .06, db_lateral: .025, db_rear: .025, db_row: .1, db_curl: .05, db_ext: .1, db_lunge: .06, db_calf: .1, kb_swing: .15, bb_squat: .5, bb_dl: .6, bb_bench: .4, bb_row: .35 };
@@ -728,8 +743,8 @@ function buildProgram(p) {
   R.push(`BMI ${b.toFixed(1)}（${bmiLabel(b)}）。目標「${GOALS.find(g => g[0] === p.goal)[1]}」に合わせて組みました。`);
   R.push(`週${p.days}回なので「${SPLIT_NAME[p.days]}」。同じ部位は48時間以上あけて回復させます。`);
   R.push({
-    muscle: '筋肉をつけるため、8〜12回で限界がくる重さ×3〜4セット、休憩は長め（90秒）。',
-    diet: '脂肪燃焼のため、12〜15回×テンポよく短い休憩（40秒）＋有酸素の種目を入れています。',
+    muscle: '筋肉をつけるため、8〜12回で限界がくる重さ×3〜4セット。休憩は重い種目ほど長く（60〜150秒）しています。',
+    diet: '脂肪燃焼のため、12〜15回をテンポよく、短い休憩（30〜45秒）で。有酸素の種目も入れています。',
     health: '体力づくりのため、10〜15回をフォーム重視で。無理なく続く量にしています。',
     posture: '姿勢改善のため、背中・肩甲骨まわりの種目を多めにしています。'
   }[p.goal]);
@@ -1301,11 +1316,28 @@ function battleHTML(s) {
 function howHTML(e) {
   return `<ol>${e.how.map(h => `<li>${h}</li>`).join('')}</ol><p class="cue"><b>${esc(S.profile.cat.name)}メモ：</b>${e.cue}</p>`;
 }
+// 1週間の部位別セット数。複数の部位に効く種目は補助の部位を0.5セットとして数える
+const VOL_MAP = { squat: { legs: 1 }, lunge: { legs: 1 }, hinge: { legs: 1, back: .5 }, glute: { legs: 1 }, calf: { legs: .5 }, push_h: { chest: 1, arms: .5, shoulder: .5 }, push_v: { shoulder: 1, arms: .5 }, tri: { arms: 1 }, pull_v: { back: 1, arms: .5 }, pull_h: { back: 1, arms: .5 }, posture: { back: 1 }, bi: { arms: 1 }, core: { core: 1 } };
+const VOL_LABEL = [['legs', '脚・お尻', 1], ['chest', '胸', 1], ['back', '背中', 1], ['shoulder', '肩', 1], ['arms', '腕', 0], ['core', '体幹', 0]];
+function weekVolume(prog) {
+  const v = {}; prog.days.forEach(d => d.items.forEach(it => { const m = VOL_MAP[EXM[it.id].p] || {}; for (const k in m) v[k] = (v[k] || 0) + m[k] * it.sets; })); return v;
+}
+function volumeHTML(prog, p) {
+  // 目安：筋肥大は週10〜20セット（Schoenfeld ら 2017）、健康・体力づくりは主要部位を週2回・2〜4セットずつ（ACSM）
+  const [lo, hi] = p.goal === 'muscle' ? [10, 20] : [4, 12], v = weekVolume(prog), max = Math.max(hi + 4, ...Object.values(v));
+  const rows = VOL_LABEL.map(([k, l, major]) => {
+    const n = Math.round((v[k] || 0) * 2) / 2, st = !major ? '' : n < lo ? '<span class="pill">少なめ</span>' : n > hi ? '<span class="pill">多め</span>' : '<span class="pill ok">目安どおり</span>';
+    return `<li><span class="vl">${l}</span><span class="vb"><i style="width:${Math.min(100, n / max * 100)}%"></i>${major ? `<b style="left:${lo / max * 100}%;width:${(hi - lo) / max * 100}%"></b>` : ''}</span><span class="vn num">${n}</span>${st}</li>`;
+  }).join('');
+  return `<section class="card"><h2>1週間のセット数</h2><ul class="vol">${rows}</ul>
+    <p class="note">帯の濃い部分が目安（${p.goal === 'muscle' ? '筋肉をつけるなら主要部位で週10〜20セット' : '健康・体力づくりなら主要部位で週4〜12セット'}）。複数の部位に効く種目は、補助の部位を0.5セットとして数えています。${p.goal === 'muscle' && p.days * p.minutes < 120 ? '時間が短いと少なめになります。続けられるペースを優先して大丈夫です。' : ''}</p></section>`;
+}
 function vPlan() {
   const p = S.profile, di = nextDayIdx();
   return `<main class="screen">
     <header><div class="eyebrow">あなた専用</div><h1>トレーニングプログラム</h1></header>
     <section class="card why"><h2>このメニューにした理由</h2><ul>${S.program.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></section>
+    ${volumeHTML(S.program, p)}
     ${S.program.days.map((d, i) => `<section class="day">
       <div class="dayhead"><span class="dnum">DAY ${i + 1}</span><h2>${d.label}</h2><span class="muted small num">約${dayEst(d, p)}分</span>${i === di ? '<span class="pill paw">次はこれ</span>' : ''}</div>
       <ol class="plist">${d.items.map((it, j) => { const e = EXM[it.id], k = `${i}-${j}`, open = openHow === k; return `<li>
@@ -1343,7 +1375,7 @@ function vSession() {
       <h2>${e.n}</h2>
       <p class="target">${it.sets}セット × ${amt}${e.side ? '（左右それぞれ）' : ''} · 休憩${it.rest}秒</p>
       ${last ? `<p class="prev">前回：${last}</p>` : ''}
-      ${it.guess ? `<p class="prev">重さは体重などから出した目安（${it.guess}kg）です。${it.loT}回が楽すぎたら重く、${it.loT}回できなければ軽くしてください。</p>` : ''}
+      ${it.guess ? `<p class="prev">重さは体重などから出した目安（${it.guess}kg）です。${it.hiT}回が楽にできたら重く、${it.loT}回できなければ軽くしてください。</p>` : ''}
     </section>
     ${demoHTML(e, it)}
     <details class="card" style="gap:8px"><summary style="font-weight:700;cursor:pointer">手順とコツを読む</summary><div class="howbox" style="padding:8px 0 0">${howHTML(e)}</div></details>
