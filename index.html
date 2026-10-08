@@ -492,7 +492,13 @@ const GROUPS = {
   push_v: ['push_v', 'push_h'], posture: ['posture', 'pull_h'], push_h: ['push_h'], tri: ['tri', 'push_h'], bi: ['bi', 'pull_h'],
   core: ['core'], calf: ['calf'], cardio: ['cardio']
 };
-const WARMUP = [['首と肩をゆっくり回す', '30秒'], ['腕を大きく前後に回す', '30秒'], ['股関節を回す（片脚ずつ）', '30秒'], ['その場で足ぶみ', '60秒']];
+// ウォームアップ：全身を温めたあと、その日に使う部位を軽く動かす
+const WARMUP = {
+  base: [['その場で足ぶみ（腕も振る）', '60秒'], ['首と肩をゆっくり回す', '20秒']],
+  lower: [['股関節を回す（片脚ずつ）', '30秒'], ['浅めのスクワット', '10回'], ['ヒップリフト', '10回']],
+  upper: [['腕を大きく前後に回す', '30秒'], ['壁腕立て伏せ', '10回'], ['肩甲骨を寄せる・開く', '10回']]
+};
+const warmupFor = type => [...WARMUP.base, ...(type === 'lower' || type === 'legs' ? WARMUP.lower : type === 'full' ? [WARMUP.lower[0], WARMUP.lower[1], WARMUP.upper[0]] : WARMUP.upper)];
 
 /* ========= cat lines ========= */
 const LINES = {
@@ -590,7 +596,8 @@ function candidates(slot, p, used) {
   const maxLv = lvIdx(p) + 1;
   const ok = e => grp.includes(e.p) && canUse(e, p) && !used.has(e.id);
   let list = EX.filter(e => ok(e) && e.lv <= maxLv);
-  if (!list.length) list = EX.filter(ok);
+  // 条件に合う種目がないときだけ1段階上まで広げる（初心者に上級種目は出さない）
+  if (!list.length) list = EX.filter(e => ok(e) && e.lv <= Math.min(maxLv + 1, p.level === 'beginner' ? 2 : 3));
   const score = e => -grp.indexOf(e.p) * 2 - Math.abs(e.lv - maxLv) * .8 + (e.w ? 1 : 0) + (e.pri || 0)
     + (p.goal === 'muscle' ? (e.w ? .8 : 0) - (e.impact ? .8 : 0) - (e.unit === 'sec' && e.p !== 'core' ? .6 : 0) : 0);
   return list.map(e => ({ e, s: score(e) })).sort((a, b) => b.s - a.s);
@@ -599,8 +606,10 @@ function makeItem(e, slot, p) {
   const L = lvIdx(p), g = p.goal;
   let sets = { muscle: [3, 3, 4], diet: [2, 3, 3], health: [2, 3, 3], posture: [2, 3, 3] }[g][L];
   if (p.age >= 60) sets = Math.min(sets, 3);
-  let rest = { muscle: 90, diet: 40, health: 60, posture: 60 }[g] + (p.age >= 60 ? 15 : 0);
-  if (['cardio', 'calf', 'posture', 'core'].includes(e.p)) rest = Math.min(rest, 45);
+  // 休憩：重い複数関節種目は長め、単関節種目は短め（NSCA・ACSMの目安：筋肥大30〜90秒、高重量2〜3分）
+  const iso = isIso(e), heavy = (e.req || []).some(r => r.includes('barbell'));
+  let rest = { muscle: heavy ? 150 : iso ? 60 : 90, diet: iso ? 30 : 45, health: iso ? 45 : 60, posture: iso ? 45 : 60 }[g] + (p.age >= 60 ? 15 : 0);
+  if (['cardio', 'core'].includes(e.p)) rest = Math.min(rest, 45);
   const it = { id: e.id, slot, sets, rest };
   if (e.unit === 'sec') it.sec = e.id === 'dead_hang' ? [15, 20, 30][L] : e.p === 'cardio' ? [20, 30, 40][L] : [20, 30, 45][L];
   else {
@@ -610,34 +619,110 @@ function makeItem(e, slot, p) {
   }
   return it;
 }
-function estSec(it, sets = it.sets) {
-  const e = EXM[it.id];
-  return sets * ((it.sec || it.hi * 3.5) * (e.side ? 2 : 1) + it.rest) + 40;
+const isIso = e => ['bi', 'tri', 'calf', 'posture'].includes(e.p) || ['db_lateral', 'db_rear', 'clamshell', 'band_walk'].includes(e.id);
+// 1回あたりの動作時間（秒）：お手本のリズム（キープ動作を除く）から求める
+function repSec(id) { const m = MOT[MOTMAP[id]]; const t = m ? m.ph.reduce((a, p) => a + (p[3] === 'k' ? 0 : p[1]), 0) : 0; return t || 3.5; }
+// 1セットの動作時間（左右ある種目は両側＋持ちかえ5秒）
+function workSec(it, e = EXM[it.id], reps = it.hi) { const per = it.sec ? (reps ?? it.sec) : reps * repSec(it.id); return per * (e.side ? 2 : 1) + (e.side ? 5 : 0); }
+// 1種目の所要時間：セット×動作＋セット間の休憩（最後のセットの後は次の種目へ）＋準備45秒
+function estSec(it, sets = it.sets) { return sets * workSec(it, EXM[it.id], it.sec || it.hi) + (sets - 1) * it.rest + 45; }
+// 運動強度（METs）。Compendium of Physical Activities（2024）の値を参考にした目安
+const MET = { rest: 1.5, warm: 3.0 };
+function metOf(e) {
+  const o = { rope: 11.0, burpee: 8.0, jumping_jack: 7.7, mountain: 8.0, high_knee: 6.0, step_jack: 4.0, kb_swing: 8.0, bb_squat: 6.0, bb_dl: 6.0 };
+  if (o[e.id]) return o[e.id];
+  if (e.w) return 5.0;                                        // フリーウェイト（中〜高強度）
+  if (['core', 'posture', 'glute', 'calf'].includes(e.p)) return 2.8;   // 軽めの自重（腹筋・小さな動き）
+  return 3.8;                                                 // 自重トレーニング（中強度）
+}
+// 予定メニューの消費カロリー（kcal）：動作中はMETs、休憩は1.5METs、ウォームアップ3METs
+function dayKcal(d, p = S.profile) {
+  const warm = p.minutes <= 10 ? 120 : 180;
+  let metSec = warm * MET.warm;
+  d.items.forEach(it => { const e = EXM[it.id], w = it.sets * workSec(it, e, it.sec || it.hi); metSec += w * metOf(e) + (estSec(it) - w) * MET.rest; });
+  return Math.round(metSec / 3600 * p.weight);
+}
+// 実際のトレーニングの消費カロリー：記録した回数・秒数から動作時間を出し、残りを休憩として計算
+function sessionKcal(items, dur, p = S.profile) {
+  let work = 0, metSec = 0;
+  items.forEach(it => { const e = EXM[it.id]; it.sets.forEach(x => { const w = workSec({ id: it.id, sec: e.unit === 'sec' ? x.r : null }, e, x.r); work += w; metSec += w * metOf(e); }); });
+  return Math.round((metSec + Math.max(0, dur - work) * MET.rest) / 3600 * p.weight);
+}
+// 重さのはじめの目安（体重比）。器具1つあたり。安全のため控えめにし、10回が少しきついところで調整してもらう
+const START_W = { goblet_squat: .15, db_rdl: .1, db_bench: .08, db_floor: .08, db_press: .06, db_lateral: .025, db_rear: .025, db_row: .1, db_curl: .05, db_ext: .1, db_lunge: .06, db_calf: .1, kb_swing: .15, bb_squat: .5, bb_dl: .6, bb_bench: .4, bb_row: .35 };
+function roundW(e, w) {
+  const bar = (e.req || []).some(r => r.includes('barbell')), kb = (e.req || []).every(r => r.length === 1 && r[0] === 'kettlebell');
+  if (bar) return Math.max(20, Math.round(w / 2.5) * 2.5);
+  if (kb) return Math.max(4, Math.round(w / 2) * 2);
+  return Math.max(1, Math.round(w));
+}
+function startW(e, p = S.profile) {
+  const f = START_W[e.id]; if (!f) return '';
+  const bw = Math.min(p.weight, 25 * (p.height / 100) ** 2);   // 体脂肪の多い人は、身長に対する標準体重までで計算
+  const k = (p.sex === 'female' ? .65 : 1) * [1, 1.3, 1.6][lvIdx(p)] * (p.age >= 60 ? .8 : 1);
+  return roundW(e, bw * f * k);
+}
+const minItems = p => p.minutes <= 10 ? 2 : 3;
+const daySec = (items, p) => (p.minutes <= 10 ? 120 : 180) + items.reduce((a, it) => a + estSec(it), 0);
+// 種目の分類（週のバランス確認用）
+const PGROUP = { squat: 'legs', lunge: 'legs', hinge: 'legs', glute: 'legs', calf: 'legs', push_h: 'push', push_v: 'push', tri: 'push', pull_v: 'pull', pull_h: 'pull', posture: 'pull', bi: 'pull', core: 'core', cardio: 'cardio' };
+// 時間に収める：①4セット→3セット ②3セット→2セット ③休憩を15秒ずつ短く（下限あり）
+function fitTime(items, p) {
+  const budget = p.minutes * 60, floor = it => p.goal === 'muscle' ? ((EXM[it.id].req || []).some(r => r.includes('barbell')) ? 90 : 45) : 30;
+  for (const cap of [3, 2]) for (const it of items) { if (daySec(items, p) <= budget) return; if (it.sets > cap) it.sets = cap; }
+  let changed = true;
+  while (daySec(items, p) > budget && changed) {
+    changed = false;
+    const it = [...items].sort((a, b) => (b.rest - floor(b)) - (a.rest - floor(a)))[0];
+    if (it && it.rest - 15 >= floor(it)) { it.rest -= 15; changed = true; }
+  }
+  // それでも入らない短時間メニューは、後ろの種目から1セットにする（初心者は1セットでも効果がある：ACSM）
+  for (const it of [...items].reverse()) { if (daySec(items, p) <= budget) return; if (it.sets > 1) it.sets = 1; }
 }
 function buildDay(type, v, p) {
   const slots = [...TEMPLATES[type][Math.min(v, TEMPLATES[type].length - 1)]];
-  if (p.goal === 'diet') slots.splice(3, 0, 'cardio');
-  if (p.goal === 'posture' && !slots.includes('posture')) slots.splice(2, 0, 'posture');
-  const used = new Set(), items = [];
-  const budget = p.minutes * 60;
-  let total = p.minutes <= 10 ? 120 : 180;
-  for (const slot of slots) {
-    const c = candidates(slot, p, used);
-    if (!c.length) continue;
-    const close = c.filter(x => x.s > c[0].s - 1.2);
-    const e = close[v % close.length].e;
-    const it = makeItem(e, slot, p);
-    const t = estSec(it);
-    if (items.length >= (p.minutes <= 10 ? 2 : 3) && total + t > budget) break;
-    items.push(it); used.add(e.id); total += t;
-  }
-  if (total > budget) items.forEach(it => { if (it.sets > 2) it.sets--; });
+  // 目標に直結する種目は時間が短くても入るよう、前のほうに置く
+  if (p.goal === 'diet') slots.splice(2, 0, 'cardio');
+  if (p.goal === 'posture' && !slots.includes('posture')) slots.splice(1, 0, 'posture');
+  const used = new Set(), items = [], budget = p.minutes * 60;
+  const tryAdd = (slot, force) => {
+    const c = candidates(slot, p, used); if (!c.length) return false;
+    const close = c.filter(x => x.s > c[0].s - 1.2), e = close[v % close.length].e, it = makeItem(e, slot, p);
+    if (!force && daySec([...items, it], p) > budget) return null;
+    if ((p.goal === 'posture' && slot === 'posture') || (p.goal === 'diet' && slot === 'cardio')) it.key = 1;
+    items.push(it); used.add(e.id); return true;
+  };
+  for (const slot of slots) { if (tryAdd(slot, items.length < minItems(p)) === null) break; }
+  // 器具や痛みの条件で種目が足りないときは、ほかの部位で補う
+  for (const slot of ['core', 'glute', 'calf', 'posture', 'cardio', 'push_h', 'squat']) { if (items.length >= minItems(p)) break; tryAdd(slot, true); }
+  fitTime(items, p);
   return { type, label: DAY_LABEL[type], items };
+}
+// 1週間で脚・押す・引く・体幹（減量なら有酸素も）がそろうように補う
+function balanceWeek(days, p) {
+  const need = ['legs', 'push', 'pull', 'core', ...(p.goal === 'diet' ? ['cardio'] : [])];
+  const SLOT = { legs: 'squat', push: 'push_h', pull: 'pull', core: 'core', cardio: 'cardio' };
+  const has = g => days.some(d => d.items.some(it => PGROUP[EXM[it.id].p] === g));
+  for (const g of need) {
+    if (has(g)) continue;
+    const order = [...days].sort((a, b) => (daySec(a.items, p) - daySec(b.items, p)));
+    for (const d of order) {
+      const used = new Set(d.items.map(it => it.id)), c = candidates(SLOT[g], p, used);
+      if (!c.length) break;
+      const it = makeItem(c[0].e, SLOT[g], p);
+      const count = k => days.reduce((a, x) => a + x.items.filter(y => PGROUP[EXM[y.id].p] === k).length, 0);
+      if (daySec([...d.items, it], p) <= p.minutes * 60) { d.items.push(it); break; }
+      // 時間がなければ、週にほかにもある部位の最後の種目と入れかえる
+      const k = [...d.items].reverse().findIndex(y => !y.key && count(PGROUP[EXM[y.id].p]) > 1);
+      if (k >= 0) { d.items[d.items.length - 1 - k] = it; fitTime(d.items, p); break; }
+    }
+  }
 }
 const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it), 0)) / 60);
 
 function buildProgram(p) {
   const days = SPLITS[p.days].map(([t, v]) => buildDay(t, v, p));
+  balanceWeek(days, p);
   const b = bmi(p);
   const R = [];
   R.push(`BMI ${b.toFixed(1)}（${bmiLabel(b)}）。目標「${GOALS.find(g => g[0] === p.goal)[1]}」に合わせて組みました。`);
@@ -659,7 +744,7 @@ function buildProgram(p) {
   return { days, reasons: R, created: Date.now() };
 }
 const nextDayIdx = () => S.rot % S.program.days.length;
-const kcalOf = minutes => Math.round((S.profile.goal === 'diet' ? 5 : 3.5) * S.profile.weight * minutes / 60 * 1.05);
+const kcalOf = minutes => Math.round(3.5 * S.profile.weight * minutes / 60);
 function rxText(it) {
   const e = EXM[it.id], pr = S.prog[it.id] || {};
   const amt = it.sec ? `${it.sec + (pr.sec || 0)}秒` : `${it.lo + (pr.extra || 0)}〜${it.hi + (pr.extra || 0)}回`;
@@ -1124,7 +1209,7 @@ function vHome() {
     todayCard = `<section class="card today">
       <div class="rowb"><span class="eyebrow">次のメニュー · DAY ${di + 1}/${S.program.days.length}</span>${trainedToday() ? '<span class="pill ok">今日は達成ずみ</span>' : ''}</div>
       <h2>${day.label}</h2>
-      <p class="muted small"><span class="num">約${est}分</span> · ${day.items.length}種目 · 消費の目安 <span class="num">${kcalOf(est)}</span>kcal</p>
+      <p class="muted small"><span class="num">約${est}分</span> · ${day.items.length}種目 · 消費の目安 <span class="num">${dayKcal(day)}</span>kcal</p>
       <ul class="exlist">${day.items.map(it => `<li><span>${EXM[it.id].n}</span><span>${rxText(it)}</span></li>`).join('')}</ul>
       <button class="btn primary" data-act="start">${trainedToday() ? 'もう1回やる' : 'はじめる'}</button>
       <button class="btn soft" data-act="mini">気分がのらない日は「5分だけ」</button>
@@ -1240,7 +1325,7 @@ function vSession() {
   if (s.cur < 0) {
     return `${bar}<main class="sess">${coach}
       <section class="ex"><div class="eyebrow">ウォームアップ · 約3分</div><h2>体をあたためよう</h2></section>
-      <ul class="warm">${WARMUP.map(w => `<li><span>${w[0]}</span><span class="muted num">${w[1]}</span></li>`).join('')}</ul>
+      <ul class="warm">${warmupFor(S.program.days[s.di] ? S.program.days[s.di].type : 'full').map(w => `<li><span>${w[0]}</span><span class="muted num">${w[1]}</span></li>`).join('')}</ul>
       <p class="note">体があたたまるとケガをしにくく、力も出やすくなります。</p></main>
       <div class="sfoot"><div><button class="btn ghost" data-act="go" data-v="0">スキップ</button><button class="btn primary" data-act="go" data-v="0">準備できた</button></div></div>`;
   }
@@ -1258,6 +1343,7 @@ function vSession() {
       <h2>${e.n}</h2>
       <p class="target">${it.sets}セット × ${amt}${e.side ? '（左右それぞれ）' : ''} · 休憩${it.rest}秒</p>
       ${last ? `<p class="prev">前回：${last}</p>` : ''}
+      ${it.guess ? `<p class="prev">重さは体重などから出した目安（${it.guess}kg）です。${it.loT}回が楽すぎたら重く、${it.loT}回できなければ軽くしてください。</p>` : ''}
     </section>
     ${demoHTML(e, it)}
     <details class="card" style="gap:8px"><summary style="font-weight:700;cursor:pointer">手順とコツを読む</summary><div class="howbox" style="padding:8px 0 0">${howHTML(e)}</div></details>
@@ -1494,7 +1580,8 @@ function sessItem(it, mini) {
   const sets = mini ? 2 : clamp(it.sets + S.volAdj, 1, 5);
   const loT = it.lo != null ? it.lo + (pr.extra || 0) : null, hiT = it.hi != null ? it.hi + (pr.extra || 0) : null;
   const secT = it.sec ? it.sec + (pr.sec || 0) : null;
-  return { ...it, sets, loT, hiT, secT, log: Array.from({ length: sets }, () => ({ w: e.w ? (pr.w ?? '') : '', r: secT || hiT, done: false })) };
+  const guess = e.w && pr.w == null ? startW(e) : '';
+  return { ...it, sets, loT, hiT, secT, guess, log: Array.from({ length: sets }, () => ({ w: e.w ? (pr.w ?? guess) : '', r: secT || hiT, done: false })) };
 }
 function startSession(mini) {
   const di = nextDayIdx(), day = S.program.days[di];
@@ -1538,7 +1625,7 @@ function finishSession() {
   keepAwake(false);
   if (!items.length) { S.session = null; save(); toast('完了したセットがないので記録しませんでした'); go('home'); return; }
   const vol = items.reduce((a, it) => a + it.sets.reduce((b, x) => b + x.w * x.r * (EXM[it.id].side ? 2 : 1), 0), 0);
-  const kcal = Math.round((p.goal === 'diet' ? 5 : 3.5) * p.weight * dur / 3600 * 1.05);
+  const kcal = sessionKcal(items, dur, p);
   const notes = [];
   if (!s.mini) s.items.forEach(it => {
     const e = EXM[it.id], done = it.log.filter(l => l.done);
@@ -1546,8 +1633,13 @@ function finishSession() {
     const pr = S.prog[it.id] = { ...(S.prog[it.id] || {}) };
     if (e.w) { const mw = Math.max(...done.map(l => +l.w || 0)); if (mw > 0) pr.w = mw; }
     const full = done.length >= it.sets && done.every(l => +l.r >= (it.secT || it.hiT));
+    if (e.w && pr.w > 0) {
+      const failed = done.length >= it.sets && done.every(l => +l.r < it.loT);
+      pr.miss = failed ? (pr.miss || 0) + 1 : full ? 0 : (pr.miss || 0);
+      if (pr.miss >= 2) { pr.w = roundW(e, pr.w * .9); pr.miss = 0; notes.push(`${e.n}：2回続けて目標に届かなかったので、次回は ${pr.w}kg に下げて立て直すにゃ`); return; }
+    }
     if (!full) return;
-    if (e.w) { if (pr.w > 0) { pr.w = +(pr.w + (e.step || 1)).toFixed(1); pr.extra = 0; notes.push(`${e.n}：次回は ${pr.w}kg に挑戦`); } return; }
+    if (e.w) { if (pr.w > 0) { pr.w = roundW(e, pr.w + (e.step || 1)); pr.extra = 0; notes.push(`${e.n}：次回は ${pr.w}kg に挑戦`); } return; }
     const nx = e.next && EXM[e.next];
     if (nx && canUse(nx, p) && !S.program.days.some(d => d.items.some(x => x.id === nx.id))) {
       S.program.days.forEach(d => d.items.forEach((x, k) => { if (x.id === it.id) { const ni = makeItem(nx, x.slot, p); ni.sets = x.sets; d.items[k] = ni; } }));
