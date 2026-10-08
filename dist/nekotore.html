@@ -329,6 +329,17 @@ textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
 .vb b{position:absolute;top:0;bottom:0;border:2px solid var(--ok);border-radius:99px}
 .vn{text-align:right;font-weight:600}
 
+.strength{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.strength li{display:grid;grid-template-columns:1fr 64px auto 3.2em;gap:8px;align-items:center;font-size:13px}
+.strength .sn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strength .mini{width:64px;height:24px}
+.strength .mini polyline{fill:none;stroke:var(--paw);stroke-width:2;vector-effect:non-scaling-stroke}
+.strength .sv{font-weight:600;text-align:right}
+.strength .sd{font-size:12px;color:var(--muted);text-align:right}
+.strength .sd.up{color:var(--ok);font-weight:700}
+
+.src{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.6}
+
 /* modal / toast */
 .modal{position:fixed;inset:0;background:var(--shade);z-index:60;display:grid;place-items:center;padding:16px}
 .modal .card{max-width:400px;width:100%}
@@ -748,6 +759,8 @@ function balanceWeek(days, p) {
 }
 const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it), 0)) / 60);
 
+// メニューの作り方を変えたら数字を上げる。古いメニューは読みこみ時に作り直す
+const PROGRAM_VER = 2;
 function buildProgram(p) {
   const seen = new Set();
   const days = SPLITS[p.days].map(([t, v]) => { const d = buildDay(t, v, p, seen); d.items.forEach(it => seen.add(it.id)); return d; });
@@ -758,7 +771,7 @@ function buildProgram(p) {
   R.push(`BMI ${b.toFixed(1)}（${bmiLabel(b)}）。目標「${GOALS.find(g => g[0] === p.goal)[1]}」に合わせて組みました。`);
   R.push(`週${p.days}回なので「${SPLIT_NAME[p.days]}」。同じ部位は48時間以上あけて回復させます。`);
   R.push({
-    muscle: '筋肉をつけるため、8〜12回で限界がくる重さ×3〜4セット。休憩は重い種目ほど長く（60〜150秒）しています。',
+    muscle: '筋肉をつけるため、8〜12回で「あと1〜2回」まで追いこめる重さ×3〜4セット。休憩は重い種目ほど長く（60〜150秒）しています。',
     diet: '脂肪燃焼のため、12〜15回をテンポよく、短い休憩（30〜45秒）で。有酸素の種目も入れています。',
     health: '体力づくりのため、10〜15回をフォーム重視で。無理なく続く量にしています。',
     posture: '姿勢改善のため、背中・肩甲骨まわりの種目を多めにしています。'
@@ -775,7 +788,7 @@ function buildProgram(p) {
   // たんぱく質：運動する成人は体重1kgあたり1.4〜2.0g（国際スポーツ栄養学会 2017）。筋肉をつけるなら2.2gまで、健康目的は1.2g〜
   const pr = p.goal === 'muscle' ? [1.6, 2.2] : p.goal === 'diet' ? [1.4, 2.0] : [1.2, 1.6], bwP = Math.min(p.weight, 25 * (p.height / 100) ** 2);
   R.push(`たんぱく質の目安：1日 ${Math.round(bwP * pr[0])}〜${Math.round(bwP * pr[1])}g（体重1kgあたり${pr[0]}〜${pr[1]}g${bwP < p.weight ? '。標準体重で計算' : ''}）。腎臓などに持病のある方は医師の指示を優先してください。`);
-  return { days, reasons: R, created: Date.now() };
+  return { days, reasons: R, created: Date.now(), ver: PROGRAM_VER };
 }
 const nextDayIdx = () => S.rot % S.program.days.length;
 const kcalOf = minutes => Math.round(3.5 * S.profile.weight * minutes / 60);
@@ -1323,6 +1336,7 @@ function vHome() {
       <ol class="week">${cells}</ol>
     </section>
     ${todayCard}
+    ${S.programNote ? `<p class="cue">アプリの更新にあわせて、メニューを最新の考え方で作り直しました（記録はそのままです）。<button class="link" data-act="noteOk">わかった</button></p>` : ''}
     <p class="note">猫をタップするとなでられます（1日1回なかよし度アップ）。</p>
   </main>`;
 }
@@ -1427,6 +1441,15 @@ function vPlan() {
   </main>`;
 }
 
+// どこまで頑張るか：あと何回できる余裕を残して止めるか（RIR）。筋肥大は1〜2回、健康づくりは2〜3回が一般的な目安
+const effortText = p => p.goal === 'muscle' ? 'どのセットも「あと1〜2回できる」ところまで頑張るのが目安です。' : p.goal === 'diet' ? 'テンポよく、「あと2回くらいできる」ところで止めましょう。' : '「あと2〜3回できる」余裕を残して止めましょう。フォームが崩れたらそこで終わりにします。';
+// 重い種目の準備セット：本番の重さの4〜6割で数回（いきなり本番の重さを持たない）
+function warmupSets(it, e) {
+  if (!e.w || !(e.req || []).some(r => r.includes('barbell'))) return '';
+  const w = +it.log[0].w || +it.guess; if (!w) return '';
+  const a = roundW(e, Math.max(20, w * .4)), b = roundW(e, w * .6);
+  return `<p class="cue"><b>準備のセット：</b>本番の前に ${a}kg×8回 → ${b}kg×5回 を軽く。数には入れません。</p>`;
+}
 // 残り時間：まだ終わっていないセットの動作時間＋休憩
 function remainMin(s) {
   let t = 0;
@@ -1458,6 +1481,8 @@ function vSession() {
       <div class="eyebrow">${s.cur + 1} / ${n} · ${PL[e.p]}</div>
       <h2>${e.n}</h2>
       <p class="target">${it.sets}セット × ${amt}${e.side ? '（左右それぞれ）' : ''} · 休憩${it.rest}秒</p>
+      ${!it.secT ? `<p class="prev">${effortText(S.profile)}</p>` : ''}
+      ${warmupSets(it, e)}
       ${e.w ? `<p class="prev">重さは${(e.req || []).some(r => r.includes('barbell')) ? 'バーとプレートの合計' : (e.req || []).some(r => r.includes('kettlebell')) && !(e.req || []).some(r => r.includes('dumbbell')) ? 'ケトルベル1つ分' : 'ダンベル1つ分'}で記録します。${it.guess ? `はじめは体重などから出した目安の${it.guess}kgを入れています。${it.hiT}回が楽にできたら重く、${it.loT}回できなければ軽くしてください。` : ''}</p>` : ''}
       ${last ? `<p class="prev">前回：${last}</p>` : ''}
 
@@ -1515,6 +1540,22 @@ function rpgWin(r) {
     <p class="dim small">Lv ${g.L1} · つぎのレベルまで ${g.left}</p>
   </section>${g.drop && S.equip[GEARM[g.drop].slot] !== g.drop ? `<button class="btn soft" data-act="equip" data-v="${g.drop}">${GEARM[g.drop].n}を ${cat}に そうびさせる</button>` : ''}`;
 }
+// 種目ごとの伸び：重さの種目は推定最大重量（Epley式：重さ×(1+回数/30)）、自重の種目は1セットの最高回数
+function strengthHTML() {
+  const by = {};
+  S.history.forEach(h => h.items.forEach(it => {
+    const e = EXM[it.id]; if (!e) return;
+    const v = e.w ? Math.max(...it.sets.map(x => x.w > 0 ? x.w * (1 + Math.min(x.r, 12) / 30) : 0)) : Math.max(...it.sets.map(x => x.r));
+    if (v > 0) (by[it.id] = by[it.id] || []).push(v);
+  }));
+  const rows = Object.entries(by).filter(([, v]) => v.length >= 2).sort((a, b) => b[1].length - a[1].length).slice(0, 6).map(([id, v]) => {
+    const e = EXM[id], first = v[0], last = v[v.length - 1], d = last - first, max = Math.max(...v), min = Math.min(...v);
+    const pts = v.slice(-12).map((x, i, a) => `${(i / Math.max(1, a.length - 1) * 100).toFixed(1)},${(22 - (x - min) / Math.max(.01, max - min) * 18).toFixed(1)}`).join(' ');
+    return `<li><span class="sn">${e.n}</span><svg class="mini" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}"/></svg><span class="sv num">${e.w ? last.toFixed(1) + 'kg' : last + (e.unit === 'sec' ? '秒' : '回')}</span><span class="sd num ${d > 0 ? 'up' : ''}">${d > 0 ? '+' : ''}${e.w ? d.toFixed(1) : d}</span></li>`;
+  });
+  if (!rows.length) return '';
+  return `<section class="card"><h2>種目ごとの伸び</h2><ul class="strength">${rows.join('')}</ul><p class="note">重さの種目は「推定最大重量」（記録した重さと回数から Epley 式で計算した、1回だけ持ち上げられる重さの目安）。自重の種目は1セットの最高回数です。</p></section>`;
+}
 function vLog() {
   const p = S.profile, base = new Date(); base.setDate(1); base.setMonth(base.getMonth() + calOff);
   const y = base.getFullYear(), mo = base.getMonth(), first = (new Date(y, mo, 1).getDay() + 6) % 7, nd = new Date(y, mo + 1, 0).getDate();
@@ -1539,6 +1580,7 @@ function vLog() {
       <div class="inrow"><div class="unit"><input class="inp" type="number" inputmode="decimal" step="0.1" id="wIn" placeholder="${p.weight}" aria-label="今日の体重"><span>kg</span></div><button class="btn primary sm" data-act="logW">記録する</button></div>
       <p class="note">記録した体重は消費カロリーの目安にも使います。</p>
     </section>
+    ${strengthHTML()}
     <section class="card"><h2>最近のトレーニング</h2>
       ${recent.length ? `<ul class="hist">${recent.map(h => { const d = new Date(h.ts); return `<li><span><span class="num">${d.getMonth() + 1}/${d.getDate()}</span>（${WD[d.getDay()]}） ${esc(h.label)}</span><span class="muted num">${Math.max(1, Math.round(h.dur / 60))}分</span></li>`; }).join('')}</ul>` : '<p class="muted small">まだ記録がありません。最初の1回で肉球スタンプが押されます。</p>'}
     </section>
@@ -1580,6 +1622,20 @@ function vSettings() {
       <p class="muted small">記録はこの端末のブラウザに保存されます。機種変更のときは、コピーした文字を新しい端末の欄に貼りつけて読み込んでください。</p>
       <textarea class="inp" id="backup" placeholder="ここに貼りつけて「読み込む」">${esc(backupText)}</textarea>
       <div class="grid2"><button class="btn ghost sm" style="width:100%" data-act="exportData">データをコピー</button><button class="btn ghost sm" style="width:100%" data-act="importData">読み込む</button></div>
+    </section>
+    <section class="card">
+      <h2>メニューの根拠</h2>
+      <ul class="src">
+        <li><b>回数・セット・休憩・種目の順番</b>：アメリカスポーツ医学会（ACSM）と全米ストレングス＆コンディショニング協会（NSCA）の推奨</li>
+        <li><b>1週間のセット数</b>：筋肉をつけるなら主要部位で週10セット以上（Schoenfeld ら, 2017）</li>
+        <li><b>消費カロリー</b>：運動強度（METs）の一覧 Compendium of Physical Activities（2024）× 体重 × 時間</li>
+        <li><b>たんぱく質</b>：運動する人は体重1kgあたり1.4〜2.0g（国際スポーツ栄養学会, 2017）</li>
+        <li><b>推定最大重量・重さの目安</b>：Epley 式（最大重量＝重さ×(1＋回数/30)）</li>
+        <li><b>体重の変化ペース</b>：減量は週に体重の0.5〜1%、増量は0.25〜0.5%</li>
+        <li><b>お手本の体の比率</b>：身長に対する体節の長さ（Drillis & Contini）。関節の角度は一般的な指導の範囲に合わせています</li>
+        <li><b>BMIの区分</b>：日本肥満学会の基準</li>
+      </ul>
+      <p class="note">どれも一般的な目安で、体質や体調によって合う量は変わります。きつすぎる・物足りないと感じたら、トレーニング後の「きつさ」で教えてください。次回から調整します。</p>
     </section>
     <section class="card">
       <h2>ご利用にあたって</h2>
@@ -1887,6 +1943,7 @@ const A = {
     const [j, d] = t.dataset.v.split('|').map(Number), it = S.session.items[S.session.cur], l = it.log[j];
     l.r = Math.max(0, (+l.r || 0) + d * (it.secT ? 5 : 1)); const inp = $(`#r-${S.session.cur}-${j}`); if (inp) inp.value = l.r; save();
   },
+  noteOk: () => { delete S.programNote; save(); render(); },
   pace: t => {
     const el = t.closest('.demo');
     if (DM.mode === 'pace') { DM.mode = 'demo'; DM.start = performance.now(); try { speechSynthesis.cancel(); } catch (e) { } return; }
@@ -1959,5 +2016,6 @@ document.addEventListener('input', e => {
   }
 });
 
+if (S.profile && S.program && S.program.ver !== PROGRAM_VER && !S.session) { S.program = buildProgram(S.profile); S.programNote = 1; save(); }
 render();
 </script>

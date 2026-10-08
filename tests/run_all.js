@@ -1,7 +1,7 @@
 // すべてのテストを順に実行する：node tests/run_all.js
 const { execFileSync } = require('child_process');
 const path = require('path');
-const suites = ['motion', 'angles', 'breath', 'program', 'numbers', 'simulate', 'flow'];
+const suites = ['motion', 'angles', 'breath', 'program', 'numbers', 'simulate', 'flow', 'migrate'];
 let failed = 0;
 for (const s of suites) {
   const f = path.join(__dirname, `${s}.test.js`);
