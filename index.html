@@ -875,7 +875,8 @@ const myCat = (mood, cls) => catSVG({ mood, eq: S.equip, cls });
 // 角度は「真下=0・前=90・真上=180・後ろ=-90」。体は右向き。hN/hF は手の位置（IKで肘を決める）
 const FLY = 170;
 const BASEP = { t: 180, uaN: 0, faN: 0, uaF: 0, faF: 0, thN: 0, snN: 0, thF: 0, snF: 0, ft: 90, ftF: 90, jy: 0 };
-const SEG = { t: 50, ua: 26, fa: 24, th: 30, sn: 30, ft: 11 };
+// 体節の長さは Drillis & Contini の身長比（太もも0.245H・すね0.246H・上腕0.186H・前腕＋握り0.2H・胴0.288H・足0.152H）に合わせる
+const SEG = { t: 36, ua: 23, fa: 25, th: 30, sn: 30, ft: 13, heel: 5, neck: 13 };
 const A2 = (u, f) => ({ uaN: u, faN: f, uaF: u, faF: f }), L2 = (t, s) => ({ thN: t, snN: s, thF: t, snF: s });
 const PH = (d1, d2, a, b, hold = .3, hl = '') => [[1, d1, a], [1, hold, hl], [0, d2, b], [0, .4, '']];
 const PU_PTS = ['頭からかかとまで一直線', 'ひじは体から45度くらいに開く', 'お腹とお尻に力を入れる'];
@@ -896,8 +897,8 @@ const MOT = {
   superman: { an: 'hip', at: [120, 163], P: [{ t: 90, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(90, 90) }, { t: 100, ...L2(-100, -103), ft: -95, ftF: -95, ...A2(106, 106) }], ph: PH(1, 1, '手と脚を浮かせる', 'ゆっくり下ろす', 2, '2秒止める'), pts: ['高く上げなくていい', '首は自然にのばす', 'お尻をしめる'], ng: '反動で大きくそる' },
   wraise: { abd: 1, an: 'hip', at: [120, 163], P: [{ t: 90, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(-88, 88) }, { t: 100, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(-105, 75) }], ph: PH(1, 1.5, 'ひじを後ろへ引いて胸を浮かせる', 'ゆっくり戻す', 1, '肩甲骨を寄せる'), pts: ['肩甲骨を寄せる意識', '首はリラックス', '腰で反らない'], ng: '首だけを持ち上げる' },
   yraise: { an: 'hip', at: [120, 163], P: [{ t: 90, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(95, 95) }, { t: 98, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(112, 112) }], ph: PH(1, 1.5, '胸と腕を少し浮かせる', 'ゆっくり下ろす', 1, '止める'), pts: ['親指を上に向ける', '肩をすくめない', '小さな動きでOK'], ng: '腰を反らせて高く上げる' },
-  split: { an: 'ankN', at: [140, FLY], P: [{ thN: 31, snN: 31, pF: [78, 162], ftF: 40 }, { thN: 85, snN: -5, pF: [78, 162], ftF: 40 }], ph: PH(2, 1, '真下に腰を落とす', '前足で押し上げる'), pts: ['上体はまっすぐ', '前の膝はつま先より出しすぎない', '後ろの膝は床すれすれまで'], ng: '前の膝が内側に入る' },
-  revlunge: { an: 'ankN', at: [140, FLY], P: [{ pF: [140, FLY] }, { thN: 85, snN: -5, pF: [78, 162], ftF: 40 }, { thN: 15, snN: -20, pF: [112, 148], ftF: 30 }], ph: [[2, .5, '片脚を後ろへ引く'], [1, 1, '腰を落とす'], [1, .3, ''], [2, .6, '前足で押して戻る'], [0, .4, '']], pts: ['ふらつくときは壁に手を', '上体はまっすぐ', '前の膝とつま先は同じ向き'], ng: '前のめりになる' },
+  split: { an: 'ankN', at: [140, FLY], P: [{ thN: 31, snN: 31, pF: [78, 160], ftF: 40 }, { thN: 85, snN: -5, pF: [78, 160], ftF: 40 }], ph: PH(2, 1, '真下に腰を落とす', '前足で押し上げる'), pts: ['上体はまっすぐ', '前の膝はつま先より出しすぎない', '後ろの膝は床すれすれまで'], ng: '前の膝が内側に入る' },
+  revlunge: { an: 'ankN', at: [140, FLY], P: [{ pF: [140, FLY] }, { thN: 85, snN: -5, pF: [78, 160], ftF: 40 }, { thN: 15, snN: -20, pF: [112, 148], ftF: 30 }], ph: [[2, .5, '片脚を後ろへ引く'], [1, 1, '腰を落とす'], [1, .3, ''], [2, .6, '前足で押して戻る'], [0, .4, '']], pts: ['ふらつくときは壁に手を', '上体はまっすぐ', '前の膝とつま先は同じ向き'], ng: '前のめりになる' },
   bulgarian: { sup: 1, an: 'ankN', at: [150, FLY], props: [{ k: 'bench', x: 56, y: 140, w: 48 }], P: [{ t: 172, thN: 20, snN: 0, pF: [88, 134], ftF: -100 }, { t: 158, thN: 80, snN: -8, pF: [88, 134], ftF: -100 }], ph: PH(2, 1, '前脚に体重をのせて腰を落とす', '前脚で立ち上がる'), pts: ['体重はほぼ前脚に', '上体は少し前傾でOK', '前の膝が内に入らないように'], ng: '後ろ脚で踏んばる' },
   stepup: { an: 'ankN', at: [158, 150], props: [{ k: 'box', x: 140, y: 153, w: 52 }], P: [{ thN: 70, snN: -25, pF: [128, FLY] }, { thN: 0, snN: 0, pF: [150, 140], ftF: 40 }], ph: PH(1.5, 2, 'のせた脚で台の上に立つ', 'ゆっくり下りる', .4), pts: ['台の上の脚の力で上がる', '下の脚で蹴らない', '下りるときもゆっくり'], ng: '下の脚で勢いよく蹴る' },
   pushup: { an: 'toeN', at: [36, FLY], P: [{ t: 111, ...L2(-69, -69), ft: 10, ftF: 10, hN: [135, FLY], hF: [135, FLY] }, { t: 92, ...L2(-88, -88), ft: 10, ftF: 10, hN: [135, FLY], hF: [135, FLY] }], ph: PH(2, 1, '胸を床に近づける', '床を押して戻る'), pts: PU_PTS, ng: 'お尻が落ちる・上がる' },
@@ -905,7 +906,7 @@ const MOT = {
   inclinepush: { an: 'toeN', at: [30, FLY], props: [{ k: 'chair', x: 100, y: 128, w: 36, back: 'right' }], P: [{ t: 135, ...L2(-45, -45), ft: 30, ftF: 30, hN: [114, 126], hF: [114, 126] }, { t: 115, ...L2(-65, -65), ft: 30, ftF: 30, hN: [114, 126], hF: [114, 126] }], ph: PH(2, 1, '胸を台に近づける', '押し戻す'), pts: ['椅子は壁につけて固定', '体は一直線', 'ひじを開きすぎない'], ng: '椅子が動く・腰が落ちる' },
   wallpush: { an: 'toeN', at: [88, FLY], props: [{ k: 'wall', x: 160 }], P: [{ t: 160, ...L2(-20, -20), hN: [159, 68], hF: [159, 68] }, { t: 150, ...L2(-30, -30), hN: [159, 68], hF: [159, 68] }], ph: PH(2, 1, '胸を壁に近づける', '壁を押して戻る'), pts: ['体はまっすぐ一枚の板のように', '手は肩の高さ', 'お腹に力を入れる'], ng: 'お尻が後ろに引ける' },
   declinepush: { an: 'toeN', at: [34, 124], props: [{ k: 'chair', x: 8, y: 126, w: 36, back: 'left' }], P: [{ t: 87, ...L2(-93, -93), ft: 20, ftF: 20, hN: [138, FLY], hF: [138, FLY] }, { t: 75, ...L2(-105, -105), ft: 20, ftF: 20, hN: [138, FLY], hF: [138, FLY] }], ph: PH(2, 1, '胸を床に近づける', '押し戻す'), pts: ['体は一直線', '首をすくめない', 'ゆっくり下ろす'], ng: '腰が反る' },
-  pike: { abd: 1, an: 'toeN', at: [60, FLY], P: [{ t: 52, ...L2(-25, -25), ft: 30, ftF: 30, hN: [156, FLY], hF: [156, FLY], bA: -1 }, { t: 45, ...L2(-35, -35), ft: 30, ftF: 30, hN: [156, FLY], hF: [156, FLY], bA: -1 }], ph: PH(2, 1, '頭を床に近づける', '肩で押し戻す'), pts: ['お尻を高く上げたまま', '頭は手の少し前へ', '肩で押すイメージ'], ng: 'お尻が下がって普通の腕立てになる' },
+  pike: { abd: 1, an: 'toeN', at: [60, FLY], P: [{ t: 52, ...L2(-25, -25), ft: 30, ftF: 30, hN: [156, FLY], hF: [156, FLY], bA: -1 }, { t: 45, ...L2(-35, -35), ft: 30, ftF: 30, hN: [149.5, FLY], hF: [149.5, FLY], bA: -1 }], ph: PH(2, 1, '頭を床に近づける', '肩で押し戻す'), pts: ['お尻を高く上げたまま', '頭は手の少し前へ', '肩で押すイメージ'], ng: 'お尻が下がって普通の腕立てになる' },
   dip: { an: 'ankN', at: [150, FLY], props: [{ k: 'chair', x: 72, y: 130, w: 40, back: 'left' }], P: [{ ...L2(70, 5), hN: [110, 128], hF: [110, 128] }, { ...L2(100, 5), hN: [110, 128], hF: [110, 128] }], ph: PH(2, 1, 'ひじを曲げて体を下ろす', '押し戻す'), pts: ['体は椅子の近くを通す', 'ひじは後ろへ曲げる', '肩が痛ければ浅めに'], ng: '肩をすくめて深く下りる' },
   floorpress: { an: 'sh', at: [60, 164], props: [{ k: 'db', j: 'handN' }], P: [{ t: -90, ...L2(135, 45), ...A2(90, 180) }, { t: -90, ...L2(135, 45), ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり下ろす'), pts: ['ひじが床にふれたら押し上げる', '手首はまっすぐ', '肩甲骨を寄せる'], ng: 'ひじをドンと床に落とす' },
   benchpress: { an: 'sh', at: [56, 136], props: [{ k: 'bench', x: 30, y: 140, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(55, 180) }, { t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり胸まで下ろす'), pts: ['肩甲骨を寄せて胸を張る', '足は床にしっかりつける', '下ろすときはゆっくり'], ng: 'お尻が浮く' },
@@ -929,14 +930,14 @@ const MOT = {
   legraise: { an: 'hip', at: [130, 163], P: [{ t: -90, ...L2(88, 88), ft: 180, ftF: 180, ...A2(90, 90) }, { t: -90, ...L2(172, 172), ft: 95, ftF: 95, ...A2(90, 90) }], ph: PH(1, 2, '脚を上げる', '床すれすれまで下ろす'), pts: ['腰を床につけたまま', '反動を使わない', 'きついときは膝を曲げる'], ng: '腰が浮いて反る' },
   abroll: { an: 'kneeN', at: [80, 167], props: [{ k: 'roller', j: 'handN' }], P: [{ t: 125, ...L2(25, -90), ft: -90, ftF: -90, hN: [114, 161], hF: [114, 161] }, { t: 100, ...L2(60, -90), ft: -90, ftF: -90, hN: [150, 161], hF: [150, 161] }], ph: PH(2, 1.5, '腰を反らさず前へ転がす', 'お腹の力で戻る'), pts: ['腰を反らさない範囲で', 'お腹に力を入れ続ける', '無理に遠くまで行かない'], ng: '腰が反って落ちる' },
   birddog: { an: 'kneeN', at: [80, 167], P: [{ t: 111, ...L2(0, -90), ft: -90, ftF: -90 }, { t: 111, thN: 0, snN: -90, thF: -95, snF: -95, ft: -90, ftF: -90, uaN: 100, faN: 100 }], ph: PH(1.2, 1, '反対の手と脚をのばす', 'もどす', 2, '2秒止める'), pts: ['背中を水平に保つ', '手と脚は床と平行まで', 'ぐらぐらしないように'], ng: '腰が反る・体が傾く' },
-  calf: { an: 'toeN', at: [128, FLY], props: [{ k: 'wall', x: 168 }], P: [{ hN: [166, 72], hF: [166, 72] }, { ft: 40, ftF: 40, hN: [166, 72], hF: [166, 72] }], ph: PH(1, 1.5, 'かかとを上げる', 'ゆっくり下ろす', 1, '上で止める'), pts: ['親指の付け根で押す', '上で1秒止める', 'ゆっくり下ろす'], ng: '反動ではずむ' },
+  calf: { an: 'toeN', at: [128, FLY], props: [{ k: 'wall', x: 168 }], P: [{ hN: [166, 72], hF: [166, 72] }, { ft: 55, ftF: 55, hN: [166, 72], hF: [166, 72] }], ph: PH(1, 1.5, 'かかとを上げる', 'ゆっくり下ろす', 1, '上で止める'), pts: ['親指の付け根で押す', '上で1秒止める', 'ゆっくり下ろす'], ng: '反動ではずむ' },
   stepjack: { v: 'f', an: 'hip', at: [120, 110], P: [{}, { thN: 24, snN: 24, ...A2(160, 175) }, { thF: 24, snF: 24, ...A2(160, 175) }], ph: [[1, .5, '片足を横へ・腕を上へ'], [0, .5, 'もどす'], [2, .5, '反対の足を横へ'], [0, .5, 'もどす']], pts: ['跳ばずにリズムよく', '腕は大きく', '背すじをのばす'], ng: '猫背になる' },
   jack: { v: 'f', an: 'hip', at: [120, 110], P: [{}, { ...L2(18, 18), ...A2(165, 172), jy: -6 }], ph: [[1, .4, '跳んで開く'], [0, .4, '跳んでとじる']], pts: ['つま先で軽く跳ぶ', '腕は頭の上で合わせる', '着地はやわらかく'], ng: 'かかとからドスンと着地' },
   highknee: { an: 'hip', at: [115, 110], P: [{ thN: 85, snN: 0, uaN: -35, faN: 40, uaF: 40, faF: 140 }, { thF: 85, snF: 0, uaN: 40, faN: 140, uaF: -35, faF: 40 }], ph: [[1, .4, '膝を腰の高さへ'], [0, .4, '反対の膝を上げる']], pts: ['腕もしっかりふる', '背すじをのばす', '着地はやわらかく'], ng: '上体が後ろに倒れる' },
-  mountain: { an: 'sh', at: [138, 120], P: [{ t: 111, pN: [88, 155], pF: [36, 160], ft: 10, ftF: 10, hN: [138, FLY], hF: [138, FLY] }, { t: 111, pN: [36, 160], pF: [88, 155], ft: 10, ftF: 10, hN: [138, FLY], hF: [138, FLY] }], ph: [[1, .35, '膝を胸へ（左右交互）'], [0, .35, '反対の膝']], pts: ['お尻を上げすぎない', '肩は手の真上', 'リズムよく'], ng: 'お尻が高く上がる' },
-  rope: { an: 'ankN', at: [120, FLY], props: [{ k: 'rope' }], P: [A2(25, 70), { ...A2(25, 70), jy: -10, ft: 40, ftF: 40 }], ph: [[1, .25, '低く跳ぶ'], [0, .25, '']], pts: ['低く、つま先で', '手首で回す', '足音が大きいときはエア縄跳び'], ng: '高く跳びすぎる' },
-  burpee: { an: 'hip', at: [110, 110], P: [{ ax: 110, ay: 110, pN: [110, FLY], pF: [110, FLY], ...A2(5, 5) }, { ax: 99, ay: 144, t: 120, pN: [110, FLY], pF: [110, FLY] }, { ax: 96, ay: 138, t: 111, pN: [40, 157], pF: [40, 157], ft: 12, ftF: 12 }, { ax: 110, ay: 85, pN: [110, 145], pF: [110, 145], ft: 30, ftF: 30, ...A2(170, 175) }], ph: [[1, .6, 'しゃがんで手をつく'], [2, .5, '脚を後ろへ'], [1, .5, '脚をもどす'], [3, .4, '真上にジャンプ'], [0, .5, '着地']], pts: ['手は肩の真下につく', '脚を戻したら胸を張る', '着地はやわらかく'], ng: '腰が反ったまま脚を戻す' },
-  clam: { v: 'f', an: 'hip', at: [128, 151.5], rot: -90, P: [{ ...L2(4, -3), ...A2(178, 178) }, { thN: 40, snN: -5, thF: 4, snF: -3, ...A2(178, 178) }], ph: PH(1, 1.5, '上の膝を開く', 'ゆっくり閉じる', .5), pts: ['かかとはつけたまま', '骨盤を後ろに倒さない', 'お尻の横を意識'], ng: '体ごと後ろに倒れる' },
+  mountain: { an: 'sh', at: [138, 120], P: [{ t: 111, pN: [88, 151], pF: [36, 157], ft: 10, ftF: 10, hN: [138, FLY], hF: [138, FLY] }, { t: 111, pN: [36, 157], pF: [88, 151], ft: 10, ftF: 10, hN: [138, FLY], hF: [138, FLY] }], ph: [[1, .35, '膝を胸へ（左右交互）'], [0, .35, '反対の膝']], pts: ['お尻を上げすぎない', '肩は手の真上', 'リズムよく'], ng: 'お尻が高く上がる' },
+  rope: { an: 'toeN', at: [133, FLY], props: [{ k: 'rope' }], P: [A2(25, 70), { ...A2(25, 70), jy: -10, ft: 40, ftF: 40 }], ph: [[1, .25, '低く跳ぶ'], [0, .25, '']], pts: ['低く、つま先で', '手首で回す', '足音が大きいときはエア縄跳び'], ng: '高く跳びすぎる' },
+  burpee: { an: 'hip', at: [110, 110], P: [{ ax: 110, ay: 110, pN: [110, FLY], pF: [110, FLY], ...A2(5, 5) }, { ax: 99, ay: 144, t: 120, pN: [110, FLY], pF: [110, FLY] }, { ax: 96, ay: 138, t: 111, pN: [40, 155], pF: [40, 155], ft: 12, ftF: 12 }, { ax: 110, ay: 85, pN: [110, 145], pF: [110, 145], ft: 30, ftF: 30, ...A2(170, 175) }], ph: [[1, .6, 'しゃがんで手をつく'], [2, .5, '脚を後ろへ'], [1, .5, '脚をもどす'], [3, .4, '真上にジャンプ'], [0, .5, '着地']], pts: ['手は肩の真下につく', '脚を戻したら胸を張る', '着地はやわらかく'], ng: '腰が反ったまま脚を戻す' },
+  clam: { v: 'f', an: 'hip', at: [128, 148.5], rot: -90, P: [{ ...L2(4, -3), ...A2(178, 178) }, { thN: 40, snN: -5, thF: 4, snF: -3, ...A2(178, 178) }], ph: PH(1, 1.5, '上の膝を開く', 'ゆっくり閉じる', .5), pts: ['かかとはつけたまま', '骨盤を後ろに倒さない', 'お尻の横を意識'], ng: '体ごと後ろに倒れる' },
   sidewalk: { v: 'f', an: 'hip', at: [120, 110.5], props: [{ k: 'band', a: 'kneeN', b: 'kneeF' }], P: [L2(8, 8), { thN: 22, snN: 18, thF: 8, snF: 8 }], ph: [[1, .7, '横へ一歩'], [0, .7, '足をよせる']], pts: ['軽くしゃがんだまま', '膝が内に入らないように', 'つま先は正面'], ng: '上体が左右にゆれる' }
 };
 MOT.dblunge = { ...MOT.revlunge, props: [{ k: 'db', j: 'handN' }] };
@@ -946,8 +947,11 @@ MOT.bandcurl = { ...MOT.curl, props: [{ k: 'band', a: 'handN', b: 'ankN' }] };
 MOT.negpull = { ...MOT.pullup, ph: [[1, .8, '台を使って上の姿勢へ'], [0, 4, '4秒かけてゆっくり下りる'], [0, .6, '']] };
 MOT.hang = { ...MOT.pullup, ph: [[0, 3, 'キープ', 'k']], pts: ['肩をすくめず軽く胸を張る', '手は肩幅', '呼吸を続ける'], ng: '肩が耳に近づく' };
 MOT.hangknee = { ...MOT.pullup, P: [{ ...A2(178, 178), ...L2(25, -65) }, { ...A2(178, 178), ...L2(100, 5) }], ph: PH(1, 1.5, '膝を胸へ引き上げる', 'ゆっくり下ろす'), pts: ['体を振らない', 'お腹で引き上げる', '下ろすときもゆっくり'], ng: '反動でブランコのようにゆれる' };
-MOT.dbcalf = { ...MOT.calf, props: [{ k: 'db', j: 'handN' }], P: [{}, { ft: 40, ftF: 40 }] };
+MOT.dbcalf = { ...MOT.calf, props: [{ k: 'db', j: 'handN' }], P: [{}, { ft: 55, ftF: 55, t: 177, thN: -4, snN: -4, thF: -4, snF: -4 }] };
 Object.values(MOT).forEach(m => { m.P = m.P.map(x => ({ ...BASEP, ...x })); });
+// 自動調整（tests/tools/tune.js）の結果。キーポーズごとの微調整値
+const MOT_TUNE = {"plank":{"0":{"t":97,"thN":-83,"snN":-83,"thF":-83,"snF":-83,"uaN":0,"uaF":0}},"sideplank":{"0":{"t":97,"thN":-83,"snN":-83,"thF":-83,"snF":-83,"uaN":0}},"declinepush":{"0":{"t":83,"thN":-97,"snN":-97,"thF":-97,"snF":-97},"1":{"t":75,"thN":-105,"snN":-105,"thF":-105,"snF":-105}},"pike":{"0":{"t":52,"thN":-37,"snN":-37,"thF":-37,"snF":-37,"hN":[149.5,170],"hF":[149.5,170]},"1":{"t":45,"thN":-36.5,"snN":-36.5,"thF":-36.5,"snF":-36.5}},"wallpush":{"0":{"t":157,"thN":-23,"snN":-23,"thF":-23,"snF":-23},"1":{"t":150,"thN":-30,"snN":-30,"thF":-30,"snF":-30}},"abroll":{"0":{"t":125,"thN":25,"thF":25},"1":{"t":86,"thN":20,"thF":20}},"birddog":{"0":{"t":114},"1":{"t":114}},"calf":{"0":{"hN":[163.5,72],"hF":[163.5,72]},"1":{"hN":[166,72],"hF":[166,72]}},"burpee":{"1":{"ay":140.5,"t":120},"2":{"ay":135.5,"t":111}}};
+for (const [k, ps] of Object.entries(MOT_TUNE)) for (const [i, o] of Object.entries(ps)) Object.assign(MOT[k].P[i], o);
 const MOTMAP = {
   chair_squat: 'chairsquat', wall_sit: 'wallsit', bw_squat: 'squat', goblet_squat: 'goblet', bb_squat: 'bbsquat', jump_squat: 'jumpsquat', pistol_box: 'pistol',
   glute_bridge: 'bridge', single_bridge: 'bridge1', superman: 'superman', db_rdl: 'rdl', kb_swing: 'swing', bb_dl: 'deadlift', hip_thrust: 'thrust',
@@ -970,8 +974,8 @@ function ik(A, T, l1, l2, bend) {
 }
 function solve(m, P) {
   const fr = m.v === 'f', mir = a => fr ? -a : a, J = {};
-  J.hip = [0, 0]; J.sh = addv(J.hip, P.t, SEG.t); J.head = addv(J.sh, P.t, 15);
-  const sx = fr ? 13 : 0, hx = fr ? 7 : 0;
+  J.hip = [0, 0]; J.sh = addv(J.hip, P.t, SEG.t); J.head = addv(J.sh, P.t, SEG.neck);
+  const sx = fr ? 15 : 0, hx = fr ? 8 : 0;
   J.shN = [J.sh[0] + sx, J.sh[1]]; J.shF = [J.sh[0] - sx, J.sh[1]]; J.back = [J.sh[0] - 10, J.sh[1] + 6];
   J.hipN = [hx, 0]; J.hipF = [-hx, 0];
   J.kneeN = addv(J.hipN, P.thN, SEG.th); J.ankN = addv(J.kneeN, P.snN, SEG.sn);
@@ -983,8 +987,8 @@ function solve(m, P) {
   for (const k in J) J[k] = [J[k][0] + ox, J[k][1] + oy];
   if (P.pN) [J.kneeN, J.ankN] = ik(J.hipN, P.pN, SEG.th, SEG.sn, -1);
   if (P.pF) [J.kneeF, J.ankF] = ik(J.hipF, P.pF, SEG.th, SEG.sn, -1);
-  J.toeN = addv(J.ankN, P.ft, SEG.ft); J.heelN = addv(J.ankN, P.ft, -4);
-  J.toeF = addv(J.ankF, mir(P.ftF), SEG.ft); J.heelF = addv(J.ankF, mir(P.ftF), -4);
+  J.toeN = addv(J.ankN, P.ft, SEG.ft); J.heelN = addv(J.ankN, P.ft, -SEG.heel);
+  J.toeF = addv(J.ankF, mir(P.ftF), SEG.ft); J.heelF = addv(J.ankF, mir(P.ftF), -SEG.heel);
   const hN = P.hN || (P.hNr && [J.shN[0] + P.hNr[0], J.shN[1] + P.hNr[1]]), hF = P.hF || (P.hFr && [J.shF[0] + P.hFr[0], J.shF[1] + P.hFr[1]]);
   if (hN) [J.elbN, J.handN] = ik(J.shN, hN, SEG.ua, SEG.fa, P.bA ?? 1);
   if (hF) [J.elbF, J.handF] = ik(J.shF, hF, SEG.ua, SEG.fa, P.bA ?? 1);
@@ -1017,14 +1021,14 @@ function propDyn(p, J) {
   if (p.k === 'kb') return `<path class="pwl" d="M${(x - 5).toFixed(1)} ${(y + 4).toFixed(1)} Q${x.toFixed(1)} ${(y - 5).toFixed(1)} ${(x + 5).toFixed(1)} ${(y + 4).toFixed(1)}"/><circle class="pw" cx="${x.toFixed(1)}" cy="${(y + 10).toFixed(1)}" r="8"/>`;
   if (p.k === 'roller') return `<circle class="pw" cx="${x.toFixed(1)}" cy="${(y + 2).toFixed(1)}" r="8"/>`;
   if (p.k === 'band') { const b = typeof p.b === 'string' ? J[p.b] : p.b; return `<path class="pb" d="M${x.toFixed(1)} ${y.toFixed(1)} L${b[0].toFixed(1)} ${b[1].toFixed(1)}"/>`; }
-  if (p.k === 'rope') return `<path class="pb" d="M${J.handN[0].toFixed(1)} ${J.handN[1].toFixed(1)} Q${(J.toeN[0] + 18).toFixed(1)} ${(J.toeN[1] + 16).toFixed(1)} ${(J.handF[0] - 2).toFixed(1)} ${J.handF[1].toFixed(1)}"/>`;
+  if (p.k === 'rope') { const h = J.handN, y = Math.max(J.toeN[1], J.heelN[1]) + 5, f = J.toeN[0] + 14, b = J.heelN[0] - 14; return `<path class="pb" d="M${h[0].toFixed(1)} ${h[1].toFixed(1)} C${f.toFixed(1)} ${(h[1] + 20).toFixed(1)} ${f.toFixed(1)} ${y.toFixed(1)} ${((f + b) / 2).toFixed(1)} ${y.toFixed(1)} S${b.toFixed(1)} ${(h[1] + 20).toFixed(1)} ${(J.handF[0] - 1).toFixed(1)} ${J.handF[1].toFixed(1)}"/>`; }
   return '';
 }
 function figSVG(m) {
   const g = m.rot ? ` transform="rotate(${m.rot} ${m.at[0]} ${m.at[1]})"` : '';
   return `<svg class="fig ${m.v === 'f' ? 'front' : ''}" viewBox="0 0 240 180" role="img" aria-label="お手本の動き">
     <line class="floor" x1="0" y1="173.5" x2="240" y2="173.5"/>${(m.props || []).filter(p => !DYN.has(p.k)).map(propStatic).join('')}
-    <g${g}><polyline class="lf legF"/><polyline class="lf armF"/><line class="torso"/><circle class="head" r="10"/><polyline class="ln legN"/><polyline class="ln armN"/></g>
+    <g${g}><polyline class="lf legF"/><polyline class="lf armF"/><line class="torso"/><circle class="head" r="9"/><polyline class="ln legN"/><polyline class="ln armN"/></g>
     <g class="dprops"${g}></g></svg>`;
 }
 function drawFig(el, m, P) {

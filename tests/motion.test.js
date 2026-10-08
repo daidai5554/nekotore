@@ -2,6 +2,7 @@
 const { loadApp } = require('./harness');
 const app = loadApp();
 const { MOT, MOTMAP, EX, solve, lerpP } = app;
+const CONTACTS = require('./contacts.json');
 
 const FLOOR = 171;          // 関節中心の許容最下点（線の太さを考慮）
 const CONTACT = 167.5;      // これより下にある関節は「床についている」
@@ -76,15 +77,22 @@ for (const [id, m] of Object.entries(MOT)) {
   const tops = (m.props || []).filter(p => ['box', 'bench', 'chair'].includes(p.k)).map(p => [p.x, p.x + p.w, p.y]);
   if (!m.rot && m.an !== 'handN' && !m.sup) for (const f of F.filter(f => f.key)) {
     const J = f.J, onProp = s => tops.some(([a, b, y]) => J['ank' + s][0] >= a - 4 && J['ank' + s][0] <= b + 4 && Math.abs(J['ank' + s][1] - y) < 10);
-    const feet = ['N', 'F'].filter(s => onProp(s) || (m.v === 'f' ? J['ank' + s][1] >= CONTACT - 6 : J['ank' + s][1] >= CONTACT - 6 && J['toe' + s][1] >= CONTACT));
+    const feet = ['N', 'F'].filter(s => onProp(s) || (m.v === 'f' ? J['ank' + s][1] >= CONTACT - 6 : J['toe' + s][1] >= CONTACT));
     const handsOn = f.P.hN || f.P.hF || J.handN[1] >= CONTACT || J.handF[1] >= CONTACT;
     const lying = Math.abs(J.sh[1] - J.hip[1]) < 30;
     const seated = (m.props || []).some(p => p.k === 'chair' || p.k === 'bench') && J.hip[1] > 120;
     if (!feet.length || handsOn || lying || seated || f.P.jy) continue;
-    const xs = feet.flatMap(s => m.v === 'f' ? [J['ank' + s][0] - 6, J['ank' + s][0] + 6] : [J['heel' + s][0], J['toe' + s][0]]);
+    // かかとが浮いている足（つま先立ち）は、つま先の周りだけを支えとみなす
+    const xs = feet.flatMap(s => m.v === 'f' ? [J['ank' + s][0] - 6, J['ank' + s][0] + 6] : J['heel' + s][1] >= CONTACT || onProp(s) ? [J['heel' + s][0], J['toe' + s][0]] : [J['toe' + s][0] - 4, J['toe' + s][0] + 2]);
     const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 3, c = com(J);
     if (c < lo || c > hi) add(`重心が足の外 (重心x=${c.toFixed(0)}, 足=${lo.toFixed(0)}〜${hi.toFixed(0)}, ${m.ph[f.ph][2] || '静止'})`);
   }
+  // 6) 床（台）につくべき関節がついているか（tests/contacts.json の期待値）
+  const exp = CONTACTS[id];
+  if (exp) m.P.forEach((P, i) => {
+    const J = solve(m, P), tops = (m.props || []).filter(p => ['box', 'bench', 'chair'].includes(p.k)).map(p => [p.x, p.x + p.w, p.y]);
+    (exp[i] || []).forEach(k => { const ok = J[k][1] >= 164.5 || tops.some(([a, b, y]) => J[k][0] >= a - 3 && J[k][0] <= b + 3 && Math.abs(J[k][1] - y) < 9); if (!ok) add(`P${i} の ${k} が床・台から浮く (y=${J[k][1].toFixed(1)})`); });
+  });
   if (issues.length) { report[id] = issues; total += issues.length; }
 }
 const unmapped = EX.filter(e => !MOTMAP[e.id] || !MOT[MOTMAP[e.id]]).map(e => e.id);
