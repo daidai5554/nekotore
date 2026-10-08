@@ -660,7 +660,6 @@ function repSec(id) { const m = MOT[MOTMAP[id]]; const t = m ? m.ph.reduce((a, p
 function workSec(it, e = EXM[it.id], reps = it.hi) { const per = it.sec ? (reps ?? it.sec) : reps * repSec(it.id); return per * (e.side ? 2 : 1) + (e.side ? 5 : 0); }
 // 1種目の所要時間：セット×動作＋セット間の休憩（最後のセットの後は次の種目へ）＋準備45秒
 function estSec(it, sets = it.sets) { return sets * workSec(it, EXM[it.id], it.sec || it.hi) + (sets - 1) * it.rest + 45; }
-// 運動強度（METs）。Compendium of Physical Activities（2024）の値を参考にした目安
 // 筋トレの値は「休憩を含めたトレーニング全体の平均」なので、休憩込みの時間にかける。有酸素は動作中だけにかけ、休憩は2.0METs
 const MET = { rest: 1.5, warm: 3.0, cardioRest: 2.0 };
 // 値は 2024 Adult Compendium（pacompendium.com）のコード：02020 自重高強度 7.5 / 02022 自重中強度 3.8 / 02024 軽い腹筋・プランク 2.8 /
@@ -678,8 +677,8 @@ const ageKcalF = p => p.age >= 60 ? 2.7 / 3.5 : 1;
 function dayKcal(d, p = S.profile) {
   let metSec = (p.minutes <= 10 ? 120 : 180) * MET.warm;
   d.items.forEach(it => {
-    const e = EXM[it.id], t = estSec(it);
-    if (e.p === 'cardio') { const w = it.sets * workSec(it, e, it.sec || it.hi); metSec += w * metOf(e, p.goal) + (t - w) * MET.cardioRest; }
+    const e = EXM[it.id], n = effSets(it), t = estSec(it, n);
+    if (e.p === 'cardio') { const w = n * workSec(it, e, it.sec || it.hi); metSec += w * metOf(e, p.goal) + (t - w) * MET.cardioRest; }
     else metSec += t * metOf(e, p.goal);
   });
   return Math.round(metSec / 3600 * p.weight * ageKcalF(p));
@@ -749,13 +748,13 @@ function buildDay(type, v, p, seen = new Set()) {
   fitTime(items, p);
   return { type, label: DAY_LABEL[type], items };
 }
-// 1週間で脚・押す・引く・体幹（減量なら有酸素も）がそろうように補う
 // 行う順番：大きな筋肉を使う多関節種目 → 単関節・小さな筋肉 → 体幹 → 有酸素（ACSM の推奨順）
 function orderItems(items) {
   const rank = it => { const e = EXM[it.id]; return e.p === 'cardio' ? 3 : e.p === 'core' || e.p === 'balance' ? 2 : isIso(e) || ['glute', 'calf'].includes(e.p) ? 1 : 0; };
   const sorted = items.map((it, i) => [it, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
   items.splice(0, items.length, ...sorted);
 }
+// 1週間で脚・押す・引く・体幹（減量なら有酸素も）がそろうように補う
 function balanceWeek(days, p) {
   const need = ['legs', 'push', 'pull', 'core', ...(p.goal === 'diet' ? ['cardio'] : [])];
   const SLOT = { legs: 'squat', push: 'push_h', pull: 'pull', core: 'core', cardio: 'cardio' };
@@ -778,7 +777,7 @@ function balanceWeek(days, p) {
     }
   }
 }
-const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it), 0)) / 60);
+const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it, effSets(it)), 0)) / 60);
 
 // メニューの作り方を変えたら数字を上げる。古いメニューは読みこみ時に作り直す
 const PROGRAM_VER = 3;
@@ -793,7 +792,7 @@ function buildProgram(p) {
   R.push(`週${p.days}回なので「${SPLIT_NAME[p.days]}」。同じ部位は48時間以上あけて回復させます。`);
   R.push({
     muscle: '筋肉をつけるため、8〜12回で「あと1〜2回」まで追いこめる重さ×3〜4セット。休憩は重い種目ほど長く（60〜150秒）しています。',
-    diet: '脂肪燃焼のため、12〜15回をテンポよく、短い休憩（30〜45秒）で。有酸素の種目も入れています。',
+    diet: '脂肪燃焼のため、12〜15回をテンポよく、短い休憩（30〜45秒。重いバーベル種目は90秒）で。有酸素の種目も入れています。',
     health: '体力づくりのため、10〜15回をフォーム重視で。無理なく続く量にしています。',
     posture: '姿勢改善のため、背中・肩甲骨まわりの種目を多めにしています。'
   }[p.goal]);
@@ -814,10 +813,12 @@ function buildProgram(p) {
 }
 const nextDayIdx = () => S.rot % S.program.days.length;
 const kcalOf = minutes => Math.round(3.5 * S.profile.weight * minutes / 60);
+// 実際に行うセット数：トレーニング後の「きつさ」で ±1 調整したもの（表示と見積もりに使う）
+const effSets = it => clamp(it.sets + (S.volAdj || 0), 1, 5);
 function rxText(it) {
   const e = EXM[it.id], pr = S.prog[it.id] || {};
   const amt = it.sec ? `${it.sec + (pr.sec || 0)}秒` : `${it.lo + (pr.extra || 0)}〜${it.hi + (pr.extra || 0)}回`;
-  return `${it.sets}セット × ${amt}${e.side ? '（左右）' : ''}${e.w && pr.w ? ` · ${pr.w}kg` : ''}`;
+  return `${effSets(it)}セット × ${amt}${e.side ? '（左右）' : ''}${e.w && pr.w ? ` · ${pr.w}kg` : ''}`;
 }
 
 /* ========= bond / week ========= */
@@ -1460,7 +1461,7 @@ function vPlan() {
         ${open ? `<div class="howbox">${demoHTML(e, null)}${howHTML(e)}<div class="rowbtns"><button class="btn ghost sm" data-act="swapPlan" data-v="${k}">別の種目に替える</button></div></div>` : ''}</li>`; }).join('')}</ol>
     </section>`).join('')}
     <button class="btn ghost" data-act="editProfile">条件を変えて作り直す</button>
-    <p class="note">同じメニューをくり返し、回数や重さを少しずつ増やすのが上達の近道です。目標回数を全セットでこなすと、次回の目標が自動で上がります。</p>
+    <p class="note">同じメニューをくり返し、回数や重さを少しずつ増やすのが上達の近道です。1セット目で目標回数の上限に届き、ほかのセットも1回差以内なら、次回の目標が自動で上がります。</p>
   </main>`;
 }
 
@@ -1513,7 +1514,7 @@ function vSession() {
     ${demoHTML(e, it)}
     <details class="card" style="gap:8px"><summary style="font-weight:700;cursor:pointer">手順とコツを読む</summary><div class="howbox" style="padding:8px 0 0">${howHTML(e)}</div></details>
     <div class="sets">${rows}</div>
-    <p class="note">${it.secT ? '▶でカウントダウン開始。' : '「いっしょにやる」でお手本のリズムに合わせて動けます。できた回数に書きかえてから✓を押してください。'}全セットで目標の上限に届くと、次回の目標が上がります。</p>
+    <p class="note">${it.secT ? '▶でカウントダウン開始。' : '「いっしょにやる」でお手本のリズムに合わせて動けます。できた回数に書きかえてから✓を押してください。'}1セット目で上限に届き、ほかのセットも1回差以内なら、次回の目標が上がります。</p>
     <div class="rowbtns"><button class="btn ghost sm" data-act="swapSess">別の種目に替える</button><button class="btn ghost sm" data-act="pain">痛みがある</button></div>
   </main>
   <div class="sfoot"><div><button class="btn ghost" data-act="go" data-v="${Math.max(0, s.cur - 1)}" ${s.cur === 0 ? 'disabled' : ''}>戻る</button>${isLast
@@ -1790,7 +1791,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function lastSets(id) { for (let i = S.history.length - 1; i >= 0; i--) { const x = S.history[i].items.find(y => y.id === id); if (x) return x.sets.map(s => s.r); } return []; }
 function sessItem(it, mini) {
   const e = EXM[it.id], pr = S.prog[it.id] || {};
-  const sets = mini ? 2 : clamp(it.sets + S.volAdj, 1, 5);
+  const sets = mini ? 2 : effSets(it);
   const loT = it.lo != null ? it.lo + (pr.extra || 0) : null, hiT = it.hi != null ? it.hi + (pr.extra || 0) : null;
   const secT = it.sec ? it.sec + (pr.sec || 0) : null;
   const guess = e.w && pr.w == null ? startW(e, S.profile, (loT + hiT) / 2) : '';
@@ -1857,7 +1858,7 @@ function finishSession() {
     if (e.w && pr.w > 0) {
       const failed = done.length >= it.sets && done.every(l => +l.r < it.loT);
       pr.miss = failed ? (pr.miss || 0) + 1 : full ? 0 : (pr.miss || 0);
-      if (pr.miss >= 2) { pr.w = roundW(e, pr.w * .9); pr.miss = 0; notes.push(`${e.n}：2回続けて目標に届かなかったので、次回は ${pr.w}kg に下げて立て直すにゃ`); return; }
+      if (pr.miss >= 2) { pr.w = roundW(e, pr.w * .9); pr.miss = 0; pr.extra = 0; notes.push(`${e.n}：2回続けて目標に届かなかったので、次回は ${pr.w}kg に下げて立て直すにゃ`); return; }
     }
     if (!full) return;
     if (e.w) {
@@ -1943,10 +1944,10 @@ const A = {
     const s = S.session, it = s.items[s.cur];
     const used = new Set(s.items.map(x => x.id));
     const c = candidates(it.slot, S.profile, used);
-    if (!c.length) { toast('入れ替えられる種目がありません'); return; }
+    if (!c.length) { toast('入れ替えられる種目がありません'); return false; }
     const ni = makeItem(c[0].e, it.slot, S.profile); ni.sets = it.sets;
     s.items[s.cur] = sessItem(ni, s.mini); sessMsg = `「${c[0].e.n}」に替えたにゃ`;
-    save(); render();
+    save(); render(); return true;
   },
   swapPlan: t => {
     const [i, j] = t.dataset.v.split('-').map(Number), d = S.program.days[i], it = d.items[j];
@@ -1981,7 +1982,7 @@ const A = {
     const [j, d] = t.dataset.v.split('|').map(Number), it = S.session.items[S.session.cur], l = it.log[j];
     l.r = Math.max(0, (+l.r || 0) + d * (it.secT ? 5 : 1)); const inp = $(`#r-${S.session.cur}-${j}`); if (inp) inp.value = l.r; save();
   },
-  pain: () => confirmBox('この種目はここでやめて、別の種目に替えますか？<br><span class="small muted">痛みが続くときは無理をせず、設定の「情報を変えてメニューを作り直す」で痛みのある部位を選んでください。強い痛み・しびれ・胸の痛みがあるときは、すぐに中止して医療機関に相談してください。</span>', '替える', () => { A.swapSess(); sessMsg = '無理しないでにゃ。別の種目にしたにゃ'; save(); render(); }),
+  pain: () => confirmBox('この種目はここでやめて、別の種目に替えますか？<br><span class="small muted">痛みが続くときは無理をせず、設定の「情報を変えてメニューを作り直す」で痛みのある部位を選んでください。強い痛み・しびれ・胸の痛みがあるときは、すぐに中止して医療機関に相談してください。</span>', '替える', () => { if (A.swapSess()) { sessMsg = '無理しないでにゃ。別の種目にしたにゃ'; save(); render(); } else { A.go({ dataset: { v: S.session.cur + 1 } }); sessMsg = '無理しないでにゃ。この種目はとばしたにゃ'; render(); } }),
   noteOk: () => { delete S.programNote; save(); render(); },
   pace: t => {
     const el = t.closest('.demo');
