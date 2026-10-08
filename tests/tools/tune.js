@@ -5,6 +5,7 @@
 const { loadApp } = require('../harness');
 const { MOT, solve } = loadApp();
 const CONTACTS = require('../contacts.json');
+const { angles, REF } = require('../biomech');
 const [id, pi, keys] = process.argv.slice(2);
 const m = MOT[id], i = +pi, base = JSON.parse(JSON.stringify(m.P[i]));
 const params = keys.split(',');
@@ -33,6 +34,7 @@ function cost(P, verbose) {
     pen(3, -8 - norm(ang(J['hip' + s], J['knee' + s]) - ang(J['knee' + s], J['ank' + s])), '膝逆' + s);
     pen(3, -10 - norm(ang(J['elb' + s], J['hand' + s]) - ang(J['sh' + s], J['elb' + s])), '肘逆' + s);
   }
+  for (const [rid, ri, rk, lo, hi, rs = 'N'] of REF) if (rid === id && ri === i) { const v = angles(J, rs)[rk]; pen(1, lo - v, rk + '<'); pen(1, v - hi, rk + '>'); }
   params.forEach(k => { const d = get(P, k) - get(base, k); c += .004 * d * d; });
   return verbose ? why : c;
 }
