@@ -149,7 +149,8 @@ p{margin:0}
 
 /* session */
 .sbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);padding:10px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
-.sbar .ttl{font-family:var(--f-display);font-weight:700;font-size:14px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbar .ttl{font-family:var(--f-display);font-weight:700;font-size:14px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;flex-direction:column;line-height:1.3}
+.sbar .ttl small{font-family:var(--f-body);font-size:11px;font-weight:500}
 .iconbtn{background:var(--surface);border:1px solid var(--line);border-radius:99px;min-width:44px;height:40px;padding:0 12px;font-weight:700;font-size:13px}
 .prog{display:flex;gap:4px;padding-inline:16px}
 .prog i{flex:1;height:6px;border-radius:99px;background:var(--surface-2)}
@@ -292,6 +293,11 @@ textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
 .fig{display:block;width:100%;max-width:360px;height:auto;margin:0 auto}
 .fig .floor{stroke:var(--line);stroke-width:3}
 .fig .ln,.fig .lf{fill:none;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.fig .th{stroke-width:9.5}
+.fig .sn{stroke-width:7}
+.fig .ua{stroke-width:7}
+.fig .fa{stroke-width:5.5}
+.fig .nose{stroke:var(--ink);stroke-width:4;stroke-linecap:round}
 .fig .ln{stroke:var(--ink)}
 .fig .lf{stroke:var(--muted);opacity:.5}
 .fig .torso{stroke:var(--ink);stroke-width:13;stroke-linecap:round}
@@ -711,6 +717,12 @@ function buildDay(type, v, p) {
   return { type, label: DAY_LABEL[type], items };
 }
 // 1週間で脚・押す・引く・体幹（減量なら有酸素も）がそろうように補う
+// 行う順番：大きな筋肉を使う多関節種目 → 単関節・小さな筋肉 → 体幹 → 有酸素（ACSM の推奨順）
+function orderItems(items) {
+  const rank = it => { const e = EXM[it.id]; return e.p === 'cardio' ? 3 : e.p === 'core' ? 2 : isIso(e) || ['glute', 'calf'].includes(e.p) ? 1 : 0; };
+  const sorted = items.map((it, i) => [it, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+  items.splice(0, items.length, ...sorted);
+}
 function balanceWeek(days, p) {
   const need = ['legs', 'push', 'pull', 'core', ...(p.goal === 'diet' ? ['cardio'] : [])];
   const SLOT = { legs: 'squat', push: 'push_h', pull: 'pull', core: 'core', cardio: 'cardio' };
@@ -735,6 +747,7 @@ const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.red
 function buildProgram(p) {
   const days = SPLITS[p.days].map(([t, v]) => buildDay(t, v, p));
   balanceWeek(days, p);
+  days.forEach(d => orderItems(d.items));
   const b = bmi(p);
   const R = [];
   R.push(`BMI ${b.toFixed(1)}（${bmiLabel(b)}）。目標「${GOALS.find(g => g[0] === p.goal)[1]}」に合わせて組みました。`);
@@ -1002,7 +1015,7 @@ const MOT = {
   split: { an: 'ankN', at: [140, FLY], P: [{ thN: 31, snN: 31, pF: [78, 160], ftF: 40 }, { thN: 85, snN: -5, pF: [78, 160], ftF: 40 }], ph: PH(2, 1, '真下に腰を落とす', '前足で押し上げる'), pts: ['上体はまっすぐ', '前の膝はつま先より出しすぎない', '後ろの膝は床すれすれまで'], ng: '前の膝が内側に入る' },
   revlunge: { an: 'ankN', at: [140, FLY], P: [{ pF: [140, FLY] }, { thN: 85, snN: -5, pF: [78, 160], ftF: 40 }, { thN: 15, snN: -20, pF: [112, 148], ftF: 30 }], ph: [[2, .5, '片脚を後ろへ引く'], [1, 1, '腰を落とす'], [1, .3, ''], [2, .6, '前足で押して戻る'], [0, .4, '']], pts: ['ふらつくときは壁に手を', '上体はまっすぐ', '前の膝とつま先は同じ向き'], ng: '前のめりになる' },
   bulgarian: { sup: 1, an: 'ankN', at: [150, FLY], props: [{ k: 'bench', x: 56, y: 140, w: 48 }], P: [{ t: 172, thN: 20, snN: 0, pF: [88, 134], ftF: -100 }, { t: 158, thN: 80, snN: -8, pF: [88, 134], ftF: -100 }], ph: PH(2, 1, '前脚に体重をのせて腰を落とす', '前脚で立ち上がる'), pts: ['体重はほぼ前脚に', '上体は少し前傾でOK', '前の膝が内に入らないように'], ng: '後ろ脚で踏んばる' },
-  stepup: { an: 'ankN', at: [158, 150], props: [{ k: 'box', x: 140, y: 153, w: 52 }], P: [{ thN: 70, snN: -25, pF: [128, FLY] }, { thN: 0, snN: 0, pF: [150, 140], ftF: 40 }], ph: PH(1.5, 2, 'のせた脚で台の上に立つ', 'ゆっくり下りる', .4), pts: ['台の上の脚の力で上がる', '下の脚で蹴らない', '下りるときもゆっくり'], ng: '下の脚で勢いよく蹴る' },
+  stepup: { an: 'ankN', at: [158, 150], props: [{ k: 'box', x: 140, y: 153, w: 52 }], P: [{ thN: 70, snN: -25, pF: [124, FLY] }, { thN: 0, snN: 0, pF: [128, 142], ftF: 40 }], ph: PH(1.5, 2, 'のせた脚で台の上に立つ', 'ゆっくり下りる', .4), pts: ['台の上の脚の力で上がる', '下の脚で蹴らない', '下りるときもゆっくり'], ng: '下の脚で勢いよく蹴る' },
   pushup: { an: 'toeN', at: [36, FLY], P: [{ t: 111, ...L2(-69, -69), ft: 10, ftF: 10, hN: [135, FLY], hF: [135, FLY] }, { t: 92, ...L2(-88, -88), ft: 10, ftF: 10, hN: [135, FLY], hF: [135, FLY] }], ph: PH(2, 1, '胸を床に近づける', '床を押して戻る'), pts: PU_PTS, ng: 'お尻が落ちる・上がる' },
   kneepush: { an: 'kneeN', at: [70, 167], P: [{ t: 124, ...L2(-51, -95), ft: -90, ftF: -90, hN: [136, FLY], hF: [136, FLY] }, { t: 99, ...L2(-81, -95), ft: -90, ftF: -90, hN: [136, FLY], hF: [136, FLY] }], ph: PH(2, 1, '胸を床に近づける', '床を押して戻る'), pts: ['頭から膝まで一直線', '手は肩の真下より少し外', 'お腹に力を入れる'], ng: 'お尻だけ後ろに引ける' },
   inclinepush: { an: 'toeN', at: [30, FLY], props: [{ k: 'chair', x: 100, y: 128, w: 36, back: 'right' }], P: [{ t: 135, ...L2(-45, -45), ft: 30, ftF: 30, hN: [114, 126], hF: [114, 126] }, { t: 115, ...L2(-65, -65), ft: 30, ftF: 30, hN: [114, 126], hF: [114, 126] }], ph: PH(2, 1, '胸を台に近づける', '押し戻す'), pts: ['椅子は壁につけて固定', '体は一直線', 'ひじを開きすぎない'], ng: '椅子が動く・腰が落ちる' },
@@ -1011,13 +1024,13 @@ const MOT = {
   pike: { abd: 1, an: 'toeN', at: [60, FLY], P: [{ t: 52, ...L2(-25, -25), ft: 30, ftF: 30, hN: [156, FLY], hF: [156, FLY], bA: -1 }, { t: 45, ...L2(-35, -35), ft: 30, ftF: 30, hN: [149.5, FLY], hF: [149.5, FLY], bA: -1 }], ph: PH(2, 1, '頭を床に近づける', '肩で押し戻す'), pts: ['お尻を高く上げたまま', '頭は手の少し前へ', '肩で押すイメージ'], ng: 'お尻が下がって普通の腕立てになる' },
   dip: { an: 'ankN', at: [150, FLY], props: [{ k: 'chair', x: 72, y: 130, w: 40, back: 'left' }], P: [{ ...L2(70, 5), hN: [110, 128], hF: [110, 128] }, { ...L2(100, 5), hN: [110, 128], hF: [110, 128] }], ph: PH(2, 1, 'ひじを曲げて体を下ろす', '押し戻す'), pts: ['体は椅子の近くを通す', 'ひじは後ろへ曲げる', '肩が痛ければ浅めに'], ng: '肩をすくめて深く下りる' },
   floorpress: { an: 'sh', at: [60, 164], props: [{ k: 'db', j: 'handN' }], P: [{ t: -90, ...L2(135, 45), ...A2(90, 180) }, { t: -90, ...L2(135, 45), ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり下ろす'), pts: ['ひじが床にふれたら押し上げる', '手首はまっすぐ', '肩甲骨を寄せる'], ng: 'ひじをドンと床に落とす' },
-  benchpress: { an: 'sh', at: [56, 136], props: [{ k: 'bench', x: 30, y: 140, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(55, 180) }, { t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり胸まで下ろす'), pts: ['肩甲骨を寄せて胸を張る', '足は床にしっかりつける', '下ろすときはゆっくり'], ng: 'お尻が浮く' },
+  benchpress: { thru: ['elbN', 'elbF'], an: 'sh', at: [56, 136], props: [{ k: 'bench', x: 30, y: 140, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(55, 180) }, { t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり胸まで下ろす'), pts: ['肩甲骨を寄せて胸を張る', '足は床にしっかりつける', '下ろすときはゆっくり'], ng: 'お尻が浮く' },
   bandpress: { an: 'ankN', at: [110, FLY], props: [{ k: 'band', a: 'handN', b: 'back' }], P: [A2(-30, 90), A2(90, 90)], ph: PH(1, 1.5, '胸の前へ押し出す', 'ゆっくり戻す', .5, '止める'), pts: ['肩をすくめない', '胸を張ったまま', '押しきって一瞬止める'], ng: '背中が丸まる' },
   ohp: { an: 'ankN', at: [115, FLY], props: [{ k: 'db', j: 'handN' }], P: [A2(30, 180), A2(178, 178)], ph: PH(1, 2, '頭の上へ押し上げる', 'ゆっくり下ろす'), pts: ['腰を反らさない', 'お腹に力を入れる', 'ひじを伸ばしきる'], ng: '腰を反らして押す' },
   lateral: { v: 'f', an: 'hip', at: [120, 110], props: [{ k: 'db', j: 'handN' }, { k: 'db', j: 'handF' }], P: [A2(8, 8), A2(88, 92)], ph: PH(1, 2, '肩の高さまで横に上げる', 'ゆっくり下ろす'), pts: ['軽い重さで十分', '肩をすくめない', 'ひじは軽く曲げたまま'], ng: '反動で振り上げる' },
   pullup: { an: 'handN', at: [125, 18], props: [{ k: 'pbar', x: 125, y: 18 }], P: [{ ...A2(178, 178), ...L2(28, -70) }, { ...A2(35, 178), ...L2(30, -70) }], ph: PH(1.5, 2, '胸をバーに近づける', 'ゆっくり下りる', .4), pts: ['反動を使わない', '肩をすくめず、胸を張る', '下りるときもゆっくり'], ng: '脚を振って反動で上がる' },
   pulldown: { an: 'ankN', at: [115, FLY], props: [{ k: 'door', x: 140, y: 8 }, { k: 'band', a: 'handN', b: [140, 8] }], P: [A2(165, 172), A2(25, 165)], ph: PH(1, 2, 'ひじを脇腹へ引き下ろす', 'ゆっくり戻す', .4), pts: ['肩甲骨を下げる', '胸を張る', 'ひじから引く'], ng: '背中が丸まる' },
-  dbrow: { an: 'ankN', at: [84, FLY], props: [{ k: 'bench', x: 74, y: 130, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: 95, thN: -5, snN: 0, thF: 53, snF: -90, ftF: -90, hF: [138, 130] }, { t: 95, thN: -5, snN: 0, thF: 53, snF: -90, ftF: -90, uaN: -80, faN: 0, hF: [138, 130] }], ph: PH(1, 2, 'ひじを天井へ引く', 'ゆっくり下ろす', .4, '上で止める'), pts: ['背中は床と平行', 'ひじを体にそわせて引く', '体をねじらない'], ng: '体をひねって持ち上げる' },
+  dbrow: { thru: ['handN', 'elbN'], an: 'ankN', at: [84, FLY], props: [{ k: 'bench', x: 74, y: 130, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: 95, thN: -5, snN: 0, thF: 53, snF: -90, ftF: -90, hF: [138, 130] }, { t: 95, thN: -5, snN: 0, thF: 53, snF: -90, ftF: -90, uaN: -80, faN: 0, hF: [138, 130] }], ph: PH(1, 2, 'ひじを天井へ引く', 'ゆっくり下ろす', .4, '上で止める'), pts: ['背中は床と平行', 'ひじを体にそわせて引く', '体をねじらない'], ng: '体をひねって持ち上げる' },
   bandrow: { an: 'hip', at: [80, 163], props: [{ k: 'band', a: 'handN', b: 'toeN' }], P: [{ ...L2(90, 90), ft: 180, ftF: 180, ...A2(95, 95) }, { ...L2(90, 90), ft: 180, ftF: 180, ...A2(-25, 90) }], ph: PH(1, 2, 'ひじを後ろへ引く', 'ゆっくり戻す', .5, '肩甲骨を寄せる'), pts: ['胸を張ったまま', 'ひじを体にそわせる', '肩をすくめない'], ng: '上体を後ろに倒して引く' },
   bbrow: { an: 'ankN', at: [110, FLY], props: [{ k: 'bar', j: 'handN', r: 15 }], P: [{ t: 120, ...L2(25, -10) }, { t: 120, ...L2(25, -10), ...A2(-60, 5) }], ph: PH(1, 2, 'おへそへ引き上げる', 'ゆっくり下ろす'), pts: ['背中はまっすぐ固定', '上体の角度を変えない', 'ひじを後ろへ引く'], ng: '上体を起こして反動で引く' },
   rearfly: { v: 'f', an: 'hip', at: [120, 110], props: [{ k: 'db', j: 'handN' }, { k: 'db', j: 'handF' }], P: [{ ts: .45, ...A2(4, 4) }, { ts: .45, ...A2(86, 90) }], ph: PH(1, 2, '腕を横へ開く', 'ゆっくり下ろす'), pts: ['前かがみで背中はまっすぐ', '軽い重さで肩の後ろをしめる', '肩をすくめない'], ng: '反動で振り上げる' },
@@ -1143,20 +1156,28 @@ function propDyn(p, J) {
   if (p.k === 'rope') { const h = J.handN, y = Math.max(J.toeN[1], J.heelN[1]) + 5, f = J.toeN[0] + 14, b = J.heelN[0] - 14; return `<path class="pb" d="M${h[0].toFixed(1)} ${h[1].toFixed(1)} C${f.toFixed(1)} ${(h[1] + 20).toFixed(1)} ${f.toFixed(1)} ${y.toFixed(1)} ${((f + b) / 2).toFixed(1)} ${y.toFixed(1)} S${b.toFixed(1)} ${(h[1] + 20).toFixed(1)} ${(J.handF[0] - 1).toFixed(1)} ${J.handF[1].toFixed(1)}"/>`; }
   return '';
 }
-function figSVG(m) {
+function figSVG(m, name = '') {
   const g = m.rot ? ` transform="rotate(${m.rot} ${m.at[0]} ${m.at[1]})"` : '';
-  return `<svg class="fig ${m.v === 'f' ? 'front' : ''}" viewBox="0 0 240 180" role="img" aria-label="お手本の動き">
+  const limb = sd => `<line class="seg th ${sd === 'F' ? 'lf' : 'ln'} th${sd}"/><polyline class="seg sn ${sd === 'F' ? 'lf' : 'ln'} sn${sd}"/><line class="seg ua ${sd === 'F' ? 'lf' : 'ln'} ua${sd}"/><line class="seg fa ${sd === 'F' ? 'lf' : 'ln'} fa${sd}"/>`;
+  return `<svg class="fig ${m.v === 'f' ? 'front' : ''}" viewBox="0 0 240 180" role="img" aria-label="${name ? esc(name) + 'の' : ''}お手本の動き">
     <line class="floor" x1="0" y1="173.5" x2="240" y2="173.5"/>${(m.props || []).filter(p => !DYN.has(p.k)).map(propStatic).join('')}
-    <g${g}><polyline class="lf legF"/><polyline class="lf armF"/><line class="torso"/><circle class="head" r="9"/><polyline class="ln legN"/><polyline class="ln armN"/></g>
+    <g${g}>${limb('F')}<line class="torso"/><circle class="head" r="9"/>${m.v === 'f' ? '' : '<line class="nose"/>'}${limb('N')}</g>
     <g class="dprops"${g}></g></svg>`;
 }
+// 太もも・すね・上腕・前腕を別々の太さで描き、鼻で顔の向き（うつ伏せ・あお向け）がわかるようにする
 function drawFig(el, m, P) {
-  const J = solve(m, P), q = el._q || (el._q = { legF: el.querySelector('.legF'), armF: el.querySelector('.armF'), legN: el.querySelector('.legN'), armN: el.querySelector('.armN'), torso: el.querySelector('.torso'), head: el.querySelector('.head'), dp: el.querySelector('.dprops') });
-  const pts = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  q.legF.setAttribute('points', pts([J.hipF, J.kneeF, J.ankF, J.heelF, J.toeF])); q.armF.setAttribute('points', pts([J.shF, J.elbF, J.handF]));
-  q.legN.setAttribute('points', pts([J.hipN, J.kneeN, J.ankN, J.heelN, J.toeN])); q.armN.setAttribute('points', pts([J.shN, J.elbN, J.handN]));
-  q.torso.setAttribute('x1', J.hip[0].toFixed(1)); q.torso.setAttribute('y1', J.hip[1].toFixed(1)); q.torso.setAttribute('x2', J.sh[0].toFixed(1)); q.torso.setAttribute('y2', J.sh[1].toFixed(1));
-  q.head.setAttribute('cx', J.head[0].toFixed(1)); q.head.setAttribute('cy', J.head[1].toFixed(1));
+  const J = solve(m, P);
+  if (!el._q) { el._q = {}; ['thN', 'snN', 'uaN', 'faN', 'thF', 'snF', 'uaF', 'faF'].forEach(k => el._q[k] = el.querySelector('.' + k)); Object.assign(el._q, { torso: el.querySelector('.torso'), head: el.querySelector('.head'), nose: el.querySelector('.nose'), dp: el.querySelector('.dprops') }); }
+  const q = el._q, f = v => v.toFixed(1);
+  const line = (n, a, b) => { n.setAttribute('x1', f(a[0])); n.setAttribute('y1', f(a[1])); n.setAttribute('x2', f(b[0])); n.setAttribute('y2', f(b[1])); };
+  for (const sd of ['N', 'F']) {
+    line(q['th' + sd], J['hip' + sd], J['knee' + sd]);
+    q['sn' + sd].setAttribute('points', [J['knee' + sd], J['ank' + sd], J['heel' + sd], J['toe' + sd]].map(p => f(p[0]) + ',' + f(p[1])).join(' '));
+    line(q['ua' + sd], J['sh' + sd], J['elb' + sd]); line(q['fa' + sd], J['elb' + sd], J['hand' + sd]);
+  }
+  line(q.torso, J.hip, J.sh);
+  q.head.setAttribute('cx', f(J.head[0])); q.head.setAttribute('cy', f(J.head[1]));
+  if (q.nose) { const dx = J.sh[0] - J.hip[0], dy = J.sh[1] - J.hip[1], L = Math.hypot(dx, dy) || 1, fx = -dy / L, fy = dx / L; line(q.nose, [J.head[0] + fx * 6, J.head[1] + fy * 6], [J.head[0] + fx * 11.5, J.head[1] + fy * 11.5 + 1]); }
   const dyn = (m.props || []).filter(p => DYN.has(p.k));
   if (dyn.length) q.dp.innerHTML = dyn.map(p => propDyn(p, J)).join('');
 }
@@ -1165,7 +1186,7 @@ function demoHTML(e, it) {
   const m = MOT[id], target = it && !it.secT ? it.hiT : 0;
   const tempo = m.ph.filter(p => p[2]).map(p => `${p[2]}${p[3] === 'k' ? '' : ` ${+p[1].toFixed(1)}秒`}`).join(' → ');
   return `<section class="demo card" data-mot="${id}" data-ex="${e.id}" data-target="${target}" data-side="${e.side ? 1 : 0}">
-    <div class="figwrap">${figSVG(m)}<div class="dcd" hidden></div></div>
+    <div class="figwrap">${figSVG(m, e.n)}<div class="dcd" hidden></div></div>
     <div class="dphase"><b class="dlabel">&nbsp;</b><span class="dbreath" hidden></span><span class="dsec num"></span></div>
     <div class="dstrip">${m.ph.map(p => `<i style="flex:${p[1]}"><b></b></i>`).join('')}</div>
     <p class="small muted">リズム：${tempo}${e.side ? '（左右それぞれ）' : ''}</p>
@@ -1401,9 +1422,15 @@ function vPlan() {
   </main>`;
 }
 
+// 残り時間：まだ終わっていないセットの動作時間＋休憩
+function remainMin(s) {
+  let t = 0;
+  s.items.forEach(it => { const left = it.log.filter(l => !l.done).length; if (left) t += left * workSec(it, EXM[it.id], it.secT || it.hiT) + Math.max(0, left - (it === s.items[s.items.length - 1] ? 1 : 0)) * it.rest + 30; });
+  return Math.max(0, Math.round(t / 60));
+}
 function vSession() {
   const s = S.session, p = S.profile, n = s.items.length;
-  const bar = `<div class="sbar"><button class="iconbtn" data-act="quit">終了</button><div class="ttl">${esc(s.label)}</div><span class="iconbtn num" id="elapsed" style="display:grid;place-items:center">0:00</span></div>
+  const bar = `<div class="sbar"><button class="iconbtn" data-act="quit">終了</button><div class="ttl">${esc(s.label)}<small class="muted num">残り約${remainMin(s)}分</small></div><span class="iconbtn num" id="elapsed" style="display:grid;place-items:center">0:00</span></div>
     <div class="prog">${s.items.map((it, i) => `<i class="${i === s.cur ? 'cur' : it.log.every(l => l.done) ? 'done' : ''}"></i>`).join('')}</div>`;
   const coach = s.battle ? battleHTML(s) : `<div class="coach">${myCat(s.cur < 0 ? 'normal' : p.cat.per === 'hot' ? 'fire' : 'normal')}<div class="bubble"><b>${esc(p.cat.name)}</b><p>${sessMsg || say('start')}</p></div></div>`;
   if (s.cur < 0) {
@@ -1426,6 +1453,7 @@ function vSession() {
       <div class="eyebrow">${s.cur + 1} / ${n} · ${PL[e.p]}</div>
       <h2>${e.n}</h2>
       <p class="target">${it.sets}セット × ${amt}${e.side ? '（左右それぞれ）' : ''} · 休憩${it.rest}秒</p>
+      ${e.w ? `<p class="prev">重さは${(e.req || []).some(r => r.includes('barbell')) ? 'バーとプレートの合計' : (e.req || []).some(r => r.includes('kettlebell')) && !(e.req || []).some(r => r.includes('dumbbell')) ? 'ケトルベル1つ分' : 'ダンベル1つ分'}で記録します。</p>` : ''}
       ${last ? `<p class="prev">前回：${last}</p>` : ''}
       ${it.guess ? `<p class="prev">重さは体重などから出した目安（${it.guess}kg）です。${it.hiT}回が楽にできたら重く、${it.loT}回できなければ軽くしてください。</p>` : ''}
     </section>
@@ -1833,6 +1861,9 @@ const A = {
     h.rpe = k;
     if (k === 'hard') S.volAdj = Math.max(-1, S.volAdj - 1);
     if (k === 'easy') S.volAdj = Math.min(1, S.volAdj + 1);
+    // 「ちょうどいい」が2回続いたら、増減したセット数を元に戻していく
+    S.okRun = k === 'ok' ? (S.okRun || 0) + 1 : 0;
+    if (S.okRun >= 2 && S.volAdj) { S.volAdj -= Math.sign(S.volAdj); S.okRun = 0; }
     rpeMsg = say(k); save(); render();
   },
   cal: t => { calOff = Math.min(0, calOff + +t.dataset.v); render(); },

@@ -302,6 +302,11 @@ textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
 .fig{display:block;width:100%;max-width:360px;height:auto;margin:0 auto}
 .fig .floor{stroke:var(--line);stroke-width:3}
 .fig .ln,.fig .lf{fill:none;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.fig .th{stroke-width:9.5}
+.fig .sn{stroke-width:7}
+.fig .ua{stroke-width:7}
+.fig .fa{stroke-width:5.5}
+.fig .nose{stroke:var(--ink);stroke-width:4;stroke-linecap:round}
 .fig .ln{stroke:var(--ink)}
 .fig .lf{stroke:var(--muted);opacity:.5}
 .fig .torso{stroke:var(--ink);stroke-width:13;stroke-linecap:round}
@@ -1162,20 +1167,28 @@ function propDyn(p, J) {
   if (p.k === 'rope') { const h = J.handN, y = Math.max(J.toeN[1], J.heelN[1]) + 5, f = J.toeN[0] + 14, b = J.heelN[0] - 14; return `<path class="pb" d="M${h[0].toFixed(1)} ${h[1].toFixed(1)} C${f.toFixed(1)} ${(h[1] + 20).toFixed(1)} ${f.toFixed(1)} ${y.toFixed(1)} ${((f + b) / 2).toFixed(1)} ${y.toFixed(1)} S${b.toFixed(1)} ${(h[1] + 20).toFixed(1)} ${(J.handF[0] - 1).toFixed(1)} ${J.handF[1].toFixed(1)}"/>`; }
   return '';
 }
-function figSVG(m) {
+function figSVG(m, name = '') {
   const g = m.rot ? ` transform="rotate(${m.rot} ${m.at[0]} ${m.at[1]})"` : '';
-  return `<svg class="fig ${m.v === 'f' ? 'front' : ''}" viewBox="0 0 240 180" role="img" aria-label="お手本の動き">
+  const limb = sd => `<line class="seg th ${sd === 'F' ? 'lf' : 'ln'} th${sd}"/><polyline class="seg sn ${sd === 'F' ? 'lf' : 'ln'} sn${sd}"/><line class="seg ua ${sd === 'F' ? 'lf' : 'ln'} ua${sd}"/><line class="seg fa ${sd === 'F' ? 'lf' : 'ln'} fa${sd}"/>`;
+  return `<svg class="fig ${m.v === 'f' ? 'front' : ''}" viewBox="0 0 240 180" role="img" aria-label="${name ? esc(name) + 'の' : ''}お手本の動き">
     <line class="floor" x1="0" y1="173.5" x2="240" y2="173.5"/>${(m.props || []).filter(p => !DYN.has(p.k)).map(propStatic).join('')}
-    <g${g}><polyline class="lf legF"/><polyline class="lf armF"/><line class="torso"/><circle class="head" r="9"/><polyline class="ln legN"/><polyline class="ln armN"/></g>
+    <g${g}>${limb('F')}<line class="torso"/><circle class="head" r="9"/>${m.v === 'f' ? '' : '<line class="nose"/>'}${limb('N')}</g>
     <g class="dprops"${g}></g></svg>`;
 }
+// 太もも・すね・上腕・前腕を別々の太さで描き、鼻で顔の向き（うつ伏せ・あお向け）がわかるようにする
 function drawFig(el, m, P) {
-  const J = solve(m, P), q = el._q || (el._q = { legF: el.querySelector('.legF'), armF: el.querySelector('.armF'), legN: el.querySelector('.legN'), armN: el.querySelector('.armN'), torso: el.querySelector('.torso'), head: el.querySelector('.head'), dp: el.querySelector('.dprops') });
-  const pts = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  q.legF.setAttribute('points', pts([J.hipF, J.kneeF, J.ankF, J.heelF, J.toeF])); q.armF.setAttribute('points', pts([J.shF, J.elbF, J.handF]));
-  q.legN.setAttribute('points', pts([J.hipN, J.kneeN, J.ankN, J.heelN, J.toeN])); q.armN.setAttribute('points', pts([J.shN, J.elbN, J.handN]));
-  q.torso.setAttribute('x1', J.hip[0].toFixed(1)); q.torso.setAttribute('y1', J.hip[1].toFixed(1)); q.torso.setAttribute('x2', J.sh[0].toFixed(1)); q.torso.setAttribute('y2', J.sh[1].toFixed(1));
-  q.head.setAttribute('cx', J.head[0].toFixed(1)); q.head.setAttribute('cy', J.head[1].toFixed(1));
+  const J = solve(m, P);
+  if (!el._q) { el._q = {}; ['thN', 'snN', 'uaN', 'faN', 'thF', 'snF', 'uaF', 'faF'].forEach(k => el._q[k] = el.querySelector('.' + k)); Object.assign(el._q, { torso: el.querySelector('.torso'), head: el.querySelector('.head'), nose: el.querySelector('.nose'), dp: el.querySelector('.dprops') }); }
+  const q = el._q, f = v => v.toFixed(1);
+  const line = (n, a, b) => { n.setAttribute('x1', f(a[0])); n.setAttribute('y1', f(a[1])); n.setAttribute('x2', f(b[0])); n.setAttribute('y2', f(b[1])); };
+  for (const sd of ['N', 'F']) {
+    line(q['th' + sd], J['hip' + sd], J['knee' + sd]);
+    q['sn' + sd].setAttribute('points', [J['knee' + sd], J['ank' + sd], J['heel' + sd], J['toe' + sd]].map(p => f(p[0]) + ',' + f(p[1])).join(' '));
+    line(q['ua' + sd], J['sh' + sd], J['elb' + sd]); line(q['fa' + sd], J['elb' + sd], J['hand' + sd]);
+  }
+  line(q.torso, J.hip, J.sh);
+  q.head.setAttribute('cx', f(J.head[0])); q.head.setAttribute('cy', f(J.head[1]));
+  if (q.nose) { const dx = J.sh[0] - J.hip[0], dy = J.sh[1] - J.hip[1], L = Math.hypot(dx, dy) || 1, fx = -dy / L, fy = dx / L; line(q.nose, [J.head[0] + fx * 6, J.head[1] + fy * 6], [J.head[0] + fx * 11.5, J.head[1] + fy * 11.5 + 1]); }
   const dyn = (m.props || []).filter(p => DYN.has(p.k));
   if (dyn.length) q.dp.innerHTML = dyn.map(p => propDyn(p, J)).join('');
 }
@@ -1184,7 +1197,7 @@ function demoHTML(e, it) {
   const m = MOT[id], target = it && !it.secT ? it.hiT : 0;
   const tempo = m.ph.filter(p => p[2]).map(p => `${p[2]}${p[3] === 'k' ? '' : ` ${+p[1].toFixed(1)}秒`}`).join(' → ');
   return `<section class="demo card" data-mot="${id}" data-ex="${e.id}" data-target="${target}" data-side="${e.side ? 1 : 0}">
-    <div class="figwrap">${figSVG(m)}<div class="dcd" hidden></div></div>
+    <div class="figwrap">${figSVG(m, e.n)}<div class="dcd" hidden></div></div>
     <div class="dphase"><b class="dlabel">&nbsp;</b><span class="dbreath" hidden></span><span class="dsec num"></span></div>
     <div class="dstrip">${m.ph.map(p => `<i style="flex:${p[1]}"><b></b></i>`).join('')}</div>
     <p class="small muted">リズム：${tempo}${e.side ? '（左右それぞれ）' : ''}</p>
