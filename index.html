@@ -1510,7 +1510,7 @@ function vSession() {
     <details class="card" style="gap:8px"><summary style="font-weight:700;cursor:pointer">手順とコツを読む</summary><div class="howbox" style="padding:8px 0 0">${howHTML(e)}</div></details>
     <div class="sets">${rows}</div>
     <p class="note">${it.secT ? '▶でカウントダウン開始。' : '「いっしょにやる」でお手本のリズムに合わせて動けます。できた回数に書きかえてから✓を押してください。'}全セットで目標の上限に届くと、次回の目標が上がります。</p>
-    <div class="rowbtns"><button class="btn ghost sm" data-act="swapSess">別の種目に替える</button></div>
+    <div class="rowbtns"><button class="btn ghost sm" data-act="swapSess">別の種目に替える</button><button class="btn ghost sm" data-act="pain">痛みがある</button></div>
   </main>
   <div class="sfoot"><div><button class="btn ghost" data-act="go" data-v="${Math.max(0, s.cur - 1)}" ${s.cur === 0 ? 'disabled' : ''}>戻る</button>${isLast
       ? '<button class="btn primary" data-act="finish">トレーニング完了</button>'
@@ -1977,6 +1977,7 @@ const A = {
     const [j, d] = t.dataset.v.split('|').map(Number), it = S.session.items[S.session.cur], l = it.log[j];
     l.r = Math.max(0, (+l.r || 0) + d * (it.secT ? 5 : 1)); const inp = $(`#r-${S.session.cur}-${j}`); if (inp) inp.value = l.r; save();
   },
+  pain: () => confirmBox('この種目はここでやめて、別の種目に替えますか？<br><span class="small muted">痛みが続くときは無理をせず、設定の「情報を変えてメニューを作り直す」で痛みのある部位を選んでください。強い痛み・しびれ・胸の痛みがあるときは、すぐに中止して医療機関に相談してください。</span>', '替える', () => { A.swapSess(); sessMsg = '無理しないでにゃ。別の種目にしたにゃ'; save(); render(); }),
   noteOk: () => { delete S.programNote; save(); render(); },
   pace: t => {
     const el = t.closest('.demo');

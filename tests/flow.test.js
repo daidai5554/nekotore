@@ -21,6 +21,12 @@ step('トレーニング', () => {
   if (!(h.kcal > 0 && h.exp > 0)) throw new Error(`カロリーか経験値が0（kcal=${h.kcal}, exp=${h.exp}）`);
   app.A.rpe({ dataset: { v: 'hard' } }); app.render();
 });
+step('痛みがある → 別の種目に替える', () => {
+  app.S.lastResult = null; app.startSession(false); const s = app.S.session; s.cur = 0; const before = s.items[0].id;
+  app.A.pain(); app.A.mYes();
+  if (s.items[0].id === before) throw new Error('種目が替わっていない');
+  app.S.session = null;
+});
 step('5分だけモード', () => { app.S.lastResult = null; app.startSession(true); const s = app.S.session; s.items.forEach((it, ci) => { s.cur = ci; it.log.forEach((l, j) => { app.markDone(j); app.stopTimer(false); }); }); app.finishSession(); });
 step('途中でやめる（記録なし）', () => { app.S.lastResult = null; app.startSession(false); app.finishSession(); if (app.S.history.length !== 2) throw new Error('空のトレーニングが記録された'); });
 step('種目ごとの伸び（推定最大重量）', () => {
