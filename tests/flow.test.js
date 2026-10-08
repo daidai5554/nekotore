@@ -23,6 +23,14 @@ step('トレーニング', () => {
 });
 step('5分だけモード', () => { app.S.lastResult = null; app.startSession(true); const s = app.S.session; s.items.forEach((it, ci) => { s.cur = ci; it.log.forEach((l, j) => { app.markDone(j); app.stopTimer(false); }); }); app.finishSession(); });
 step('途中でやめる（記録なし）', () => { app.S.lastResult = null; app.startSession(false); app.finishSession(); if (app.S.history.length !== 2) throw new Error('空のトレーニングが記録された'); });
+step('種目ごとの伸び（推定最大重量）', () => {
+  const h = app.S.history; const id = 'goblet_squat';
+  h.push({ ts: Date.now(), label: 't', mini: false, dur: 600, items: [{ id, sets: [{ w: 10, r: 10 }] }], kcal: 1, vol: 0, exp: 1, sx: {} });
+  h.push({ ts: Date.now(), label: 't', mini: false, dur: 600, items: [{ id, sets: [{ w: 12, r: 10 }] }], kcal: 1, vol: 0, exp: 1, sx: {} });
+  app.view = 'log'; app.render();
+  const html = app.strengthHTML();
+  if (!html.includes('16.0kg') || !html.includes('+2.7')) throw new Error('推定最大重量の計算が違う（12kg×10回 → 16.0kg、差+2.7のはず）');
+});
 step('作り直し', () => { app.A.editProfile(); app.draft.days = 5; app.step = 4; app.A.obNext({}); if (app.S.program.days.length !== 5) throw new Error('週5回のメニューにならない'); });
 errs.forEach(e => console.log(' - ' + e));
 console.log(errs.length ? `画面の流れ：問題 ${errs.length}件` : '画面の流れ：すべてOK');
