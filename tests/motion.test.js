@@ -90,7 +90,7 @@ for (const [id, m] of Object.entries(MOT)) {
   // 6) 床（台）につくべき関節がついているか（tests/contacts.json の期待値）
   const exp = CONTACTS[id];
   if (exp) m.P.forEach((P, i) => {
-    const J = solve(m, P), tops = (m.props || []).filter(p => ['box', 'bench', 'chair'].includes(p.k)).map(p => [p.x, p.x + p.w, p.y]);
+    const J = rotJ(solve(m, P), m), tops = (m.props || []).filter(p => ['box', 'bench', 'chair'].includes(p.k)).map(p => [p.x, p.x + p.w, p.y]);
     (exp[i] || []).forEach(k => { const ok = J[k][1] >= 164.5 || tops.some(([a, b, y]) => J[k][0] >= a - 3 && J[k][0] <= b + 3 && Math.abs(J[k][1] - y) < 9); if (!ok) add(`P${i} の ${k} が床・台から浮く (y=${J[k][1].toFixed(1)})`); });
   });
   if (issues.length) { report[id] = issues; total += issues.length; }
