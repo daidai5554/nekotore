@@ -41,7 +41,7 @@ function run(profile, weeks = 12, label = '') {
     } finally { Date.now = realNow; }
   }
   const pl = app.player();
-  return { series, oneRM, sessions, wins, pl, prog: app.S.prog };
+  return { series, oneRM, sessions, wins, pl, prog: app.S.prog, inPlan: new Set(app.S.program.days.flatMap(d => d.items.map(it => it.id))) };
 }
 
 for (const [label, prof] of [
@@ -63,8 +63,8 @@ for (const [label, prof] of [
       const maxReal = r.oneRM[id] * (1 + .01 * 12) / (1 + 8 / 30);   // 8回できる重さ（現実の上限）
       check(last <= maxReal + (e.step || 1) + .01, `${label} ${e.n}: 実力以上の重さになった（${last}kg > ${maxReal.toFixed(1)}kg）`);
     }
-    // 12週で筋力は約12%伸びるので、8回以上出てくる種目は少なくとも1回は負荷が上がるはず
-    if (ser.length >= 8) check(ups >= 1 || (r.prog[id] && (r.prog[id].extra || r.prog[id].sec)), `${label} ${e.n}: 12週で一度も負荷が上がらない`);
+    // 12週で筋力は約12%伸びるので、8回以上出てくる種目は少なくとも1回は負荷が上がるはず（上位の種目に昇格して消えた場合も可）
+    if (ser.length >= 8) check(ups >= 1 || !r.inPlan.has(id) || (r.prog[id] && (r.prog[id].extra || r.prog[id].sec)), `${label} ${e.n}: 12週で一度も負荷が上がらない`);
   }
   check(r.wins >= r.sessions * .8, `${label}: 全セットこなしてもモンスターに勝てない回が多い（${r.wins}/${r.sessions}）`);
 }

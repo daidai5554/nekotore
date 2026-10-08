@@ -610,7 +610,8 @@ const lvIdx = p => ({ beginner: 0, intermediate: 1, advanced: 2 })[p.level];
 const allowImpact = p => !(p.limits.includes('knee') || bmi(p) >= 28 || p.age >= 60);
 const canUse = (e, p) => (e.req || []).every(g => g.some(q => p.equipment.includes(q))) && !(e.avoid || []).some(a => p.limits.includes(a)) && (allowImpact(p) || !e.impact);
 
-function candidates(slot, p, used) {
+// seen：同じ週のほかの日で使った種目（同じ種類の日が続くとき、別の種目を選びやすくする）
+function candidates(slot, p, used, seen) {
   const grp = GROUPS[slot] || [slot];
   const maxLv = lvIdx(p) + 1;
   // 自重の種目は体重を支える負担が大きいので、体重が重め（BMI30以上）・65歳以上なら1段階やさしいものから選ぶ
@@ -621,7 +622,7 @@ function candidates(slot, p, used) {
   if (!list.length) list = EX.filter(e => ok(e) && e.lv <= Math.min(lvCap(e) + (lvCap(e) < maxLv ? 0 : 1), p.level === 'beginner' ? 2 : 3));
   const score = e => -grp.indexOf(e.p) * 2 - Math.abs(e.lv - lvCap(e)) * .8 + (e.w ? 1 : 0) + (e.pri || 0)
     + (p.goal === 'muscle' ? (e.w ? .8 : 0) - (e.impact ? .8 : 0) - (e.unit === 'sec' && e.p !== 'core' ? .6 : 0) : 0);
-  return list.map(e => ({ e, s: score(e) })).sort((a, b) => b.s - a.s);
+  return list.map(e => ({ e, s: score(e) - (seen && seen.has(e.id) ? .9 : 0) })).sort((a, b) => b.s - a.s);
 }
 function makeItem(e, slot, p) {
   const L = lvIdx(p), g = p.goal;
@@ -700,7 +701,8 @@ const PGROUP = { squat: 'legs', lunge: 'legs', hinge: 'legs', glute: 'legs', cal
 // 時間に収める：①4セット→3セット ②3セット→2セット ③休憩を15秒ずつ短く（下限あり）
 function fitTime(items, p) {
   const budget = p.minutes * 60, floor = it => p.goal === 'muscle' ? ((EXM[it.id].req || []).some(r => r.includes('barbell')) ? 90 : 45) : 30;
-  for (const cap of [3, 2]) for (const it of items) { if (daySec(items, p) <= budget) return; if (it.sets > cap) it.sets = cap; }
+  // 優先度の低い（後ろの）種目からセット数を減らし、メインの種目のセット数を守る
+  for (const cap of [3, 2]) for (const it of [...items].reverse()) { if (daySec(items, p) <= budget) return; if (it.sets > cap) it.sets = cap; }
   let changed = true;
   while (daySec(items, p) > budget && changed) {
     changed = false;
@@ -710,14 +712,14 @@ function fitTime(items, p) {
   // それでも入らない短時間メニューは、後ろの種目から1セットにする（初心者は1セットでも効果がある：ACSM）
   for (const it of [...items].reverse()) { if (daySec(items, p) <= budget) return; if (it.sets > 1) it.sets = 1; }
 }
-function buildDay(type, v, p) {
+function buildDay(type, v, p, seen = new Set()) {
   const slots = [...TEMPLATES[type][Math.min(v, TEMPLATES[type].length - 1)]];
   // 目標に直結する種目は時間が短くても入るよう、前のほうに置く
   if (p.goal === 'diet') slots.splice(2, 0, 'cardio');
   if (p.goal === 'posture' && !slots.includes('posture')) slots.splice(1, 0, 'posture');
   const used = new Set(), items = [], budget = p.minutes * 60;
   const tryAdd = (slot, force) => {
-    const c = candidates(slot, p, used); if (!c.length) return false;
+    const c = candidates(slot, p, used, seen); if (!c.length) return false;
     const close = c.filter(x => x.s > c[0].s - 1.2), e = close[v % close.length].e, it = makeItem(e, slot, p);
     if (!force && daySec([...items, it], p) > budget) return null;
     if ((p.goal === 'posture' && slot === 'posture') || (p.goal === 'diet' && slot === 'cardio')) it.key = 1;
@@ -758,7 +760,8 @@ function balanceWeek(days, p) {
 const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it), 0)) / 60);
 
 function buildProgram(p) {
-  const days = SPLITS[p.days].map(([t, v]) => buildDay(t, v, p));
+  const seen = new Set();
+  const days = SPLITS[p.days].map(([t, v]) => { const d = buildDay(t, v, p, seen); d.items.forEach(it => seen.add(it.id)); return d; });
   balanceWeek(days, p);
   days.forEach(d => orderItems(d.items));
   const b = bmi(p);
