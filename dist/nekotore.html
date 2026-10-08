@@ -1,0 +1,1710 @@
+<title>ねこトレ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Fredoka:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* Layout: one phone column (max 480px). Cat stage up top, a 肉球 stamp card for the week, fixed bottom tab bar. */
+:root{
+  --bg:#F1F2F7; --surface:#FFFFFF; --surface-2:#E7E9F2; --ink:#24253B; --muted:#62667F; --line:#DADCE8;
+  --paw:#D4426F; --on-paw:#FFFFFF; --paw-soft:#FBE3EB; --bonito:#D99A16; --ok:#2C9468; --shade:rgba(20,21,39,.45);
+  --win-bg:#1C1D38; --win-fg:#FFFFFF; --win-dim:#B9BCE0; --win-acc:#FFD15C; --win-cat:#FF9FC0;
+  --f-pixel:"DotGothic16","Zen Maru Gothic",monospace;
+  --f-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  --f-num:"Fredoka","Zen Maru Gothic",ui-rounded,sans-serif;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141527; --surface:#1F2138; --surface-2:#2A2D49; --ink:#ECEDF8; --muted:#A2A6C4; --line:#33365A;
+  --paw:#FF86AE; --on-paw:#2A0F1C; --paw-soft:#3B2440; --bonito:#F3C14F; --ok:#52C796; --shade:rgba(0,0,0,.6); --win-bg:#0B0C1C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141527; --surface:#1F2138; --surface-2:#2A2D49; --ink:#ECEDF8; --muted:#A2A6C4; --line:#33365A;
+  --paw:#FF86AE; --on-paw:#2A0F1C; --paw-soft:#3B2440; --bonito:#F3C14F; --ok:#52C796; --shade:rgba(0,0,0,.6); --win-bg:#0B0C1C; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--paw);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.3;margin:0;text-wrap:balance}
+h1{font-size:24px;font-weight:900}
+h2{font-size:18px;font-weight:700}
+p{margin:0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+#app{max-width:480px;margin:0 auto;min-height:100%}
+.screen{padding-inline:16px;padding-block:16px 112px;display:flex;flex-direction:column;gap:20px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.logo{font-family:var(--f-display);font-weight:900;font-size:20px;display:flex;align-items:center;gap:6px}
+.logo svg{width:22px;height:22px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 20px;border-radius:999px;border:0;font-weight:700;font-family:var(--f-display);font-size:16px;width:100%;text-align:center}
+.btn.primary{background:var(--paw);color:var(--on-paw)}
+.btn.primary:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn.soft{background:var(--paw-soft);color:var(--ink)}
+.btn.sm{min-height:40px;font-size:14px;padding:8px 14px;width:auto}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;color:var(--paw);font-weight:700;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+
+/* cat stage */
+.stage{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center}
+.catbtn{background:none;border:0;padding:0;position:relative;display:block}
+.cat{display:block;width:100%;height:auto;transform-origin:50% 90%;animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px) rotate(-1deg)}}
+.catbtn.petted .cat{animation:wiggle .6s ease-in-out 2}
+@keyframes wiggle{25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+.hearts{position:absolute;inset:0;pointer-events:none}
+.hearts i{position:absolute;bottom:60%;font-style:normal;color:var(--paw);font-size:20px;animation:float 1.2s ease-out forwards}
+@keyframes float{from{opacity:1;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-60px) scale(1.2)}}
+.bubble{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;min-width:0}
+.bubble::before{content:"";position:absolute;left:-8px;top:50%;width:14px;height:14px;background:var(--surface);border-left:1px solid var(--line);border-bottom:1px solid var(--line);transform:translateY(-50%) rotate(45deg)}
+.bubble b{font-family:var(--f-display);font-size:13px;color:var(--paw);display:block}
+.bubble p{font-size:15px;font-weight:500}
+.bond{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;font-size:13px}
+.meter{grid-column:1/-1;height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--bonito);border-radius:99px;transition:width .6s}
+
+/* week stamp card */
+.stamps h2{font-size:16px}
+.rowb{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.week{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.week li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.stamp{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;border:1.5px dashed var(--line);display:grid;place-items:center}
+.stamp svg{width:70%;height:70%;fill:var(--paw)}
+.stamp.on{border:1.5px solid var(--paw);background:var(--paw-soft)}
+.stamp.on svg{transform:rotate(-12deg)}
+.week li.today{color:var(--ink);font-weight:700}
+.week li.today .stamp{border-color:var(--ink)}
+
+.today h2{font-size:22px}
+.exlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.exlist li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.exlist li:last-child{border-bottom:0}
+.exlist span:last-child{color:var(--muted);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--ink)}
+.pill.ok{background:var(--ok);color:var(--surface)}
+.pill.paw{background:var(--paw-soft);color:var(--ink)}
+.note{font-size:12px;color:var(--muted);line-height:1.7}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs button{background:none;border:0;padding:8px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);font-weight:700}
+.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-current="page"]{color:var(--paw)}
+
+/* onboarding */
+.ob{padding-block:16px 32px}
+.steps{display:flex;gap:6px}
+.steps i{flex:1;height:6px;border-radius:99px;background:var(--surface-2)}
+.steps i.on{background:var(--paw)}
+.obcat{display:flex;justify-content:center}
+.obcat .cat{width:230px;max-width:100%}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.flabel{font-size:13px;font-weight:700}
+.inp{width:100%;min-height:48px;padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-size:16px}
+.inp:focus{border-color:var(--paw);outline:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.unit{position:relative}
+.unit .inp{padding-right:44px}
+.unit span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:500;font-size:14px;display:flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{border-color:var(--paw);background:var(--paw-soft);font-weight:700}
+.chip:disabled{opacity:.45}
+.chip .sw{width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
+.choice{display:flex;flex-direction:column;gap:8px}
+.choice .chip{width:100%;justify-content:space-between;text-align:left;min-height:56px}
+.choice .chip small{color:var(--muted);font-weight:400}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.6}
+.check input{width:22px;height:22px;accent-color:var(--paw);flex:none;margin-top:1px}
+.obnav{display:grid;grid-template-columns:auto 1fr;gap:10px}
+.obnav .btn.ghost{width:auto;padding-inline:22px}
+.err{color:var(--paw);font-size:13px;font-weight:700}
+
+/* plan */
+.why ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.day{display:flex;flex-direction:column;gap:8px}
+.dayhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dnum{font-family:var(--f-num);font-weight:600;color:var(--paw)}
+.plist{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.plist>li{border-bottom:1px solid var(--line)}
+.plist>li:last-child{border-bottom:0}
+.prow{width:100%;background:none;border:0;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;text-align:left;align-items:center}
+.prow .pn{font-weight:700;min-width:0}
+.prow .ps{color:var(--muted);font-size:13px;white-space:nowrap}
+.howbox{padding:0 16px 14px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.howbox ol{margin:0;padding-left:1.3em}
+.cue{background:var(--paw-soft);border-radius:12px;padding:8px 12px;font-size:13px}
+.cue b{font-family:var(--f-display)}
+
+/* session */
+.sbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);padding:10px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.sbar .ttl{font-family:var(--f-display);font-weight:700;font-size:14px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{background:var(--surface);border:1px solid var(--line);border-radius:99px;min-width:44px;height:40px;padding:0 12px;font-weight:700;font-size:13px}
+.prog{display:flex;gap:4px;padding-inline:16px}
+.prog i{flex:1;height:6px;border-radius:99px;background:var(--surface-2)}
+.prog i.done{background:var(--ok)}
+.prog i.cur{background:var(--paw)}
+.sess{padding-inline:16px;padding-block:14px 120px;display:flex;flex-direction:column;gap:16px}
+.coach{display:grid;grid-template-columns:84px 1fr;gap:10px;align-items:center}
+.ex h2{font-size:24px;font-weight:900}
+.target{font-size:15px;font-weight:700}
+.prev{font-size:13px;color:var(--muted)}
+.sets{display:flex;flex-direction:column;gap:8px}
+.set{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:8px 10px}
+.set.done{border-color:var(--ok)}
+.set .no{font-family:var(--f-num);font-weight:600;color:var(--muted);text-align:center}
+.set .vals{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.set .vals input{width:64px;min-height:42px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);text-align:center;font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
+.set .vals span{font-size:13px;color:var(--muted)}
+.set .acts{display:flex;gap:6px}
+.chk{width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.chk svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.set.done .chk{background:var(--ok);border-color:var(--ok)}
+.set.done .chk svg{stroke:var(--surface)}
+.play{width:48px;height:48px;border-radius:50%;border:0;background:var(--paw-soft);display:grid;place-items:center}
+.play svg{width:20px;height:20px;fill:var(--paw)}
+.sfoot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));z-index:15}
+.sfoot div{max-width:448px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:10px}
+.sfoot .btn.ghost{width:auto;padding-inline:18px}
+.rowbtns{display:flex;gap:8px;flex-wrap:wrap}
+.warm{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.warm li{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;gap:10px}
+
+/* timer */
+#timer{position:fixed;inset:0;z-index:50;background:var(--shade);display:flex;align-items:flex-end;justify-content:center}
+.tsheet{background:var(--surface);width:100%;max-width:480px;border-radius:28px 28px 0 0;padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:14px}
+.ring{position:relative;width:220px;max-width:70vw;aspect-ratio:1}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:12}
+.ring .bg{stroke:var(--surface-2)}
+.ring .fg{stroke:var(--paw);stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.ring.work .fg{stroke:var(--ok)}
+.ring .t{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-weight:600;font-size:64px;font-variant-numeric:tabular-nums}
+.tlabel{font-family:var(--f-display);font-weight:700;font-size:18px}
+.tsheet .rowbtns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* result */
+.res{align-items:stretch;text-align:center}
+.res .cat{width:230px;max-width:100%;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 6px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--f-num);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:11px;color:var(--muted)}
+.notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+.notes li{background:var(--paw-soft);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:500}
+.rpe{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rpe .chip{justify-content:center}
+
+/* log */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal .wd{font-size:11px;color:var(--muted);font-weight:700}
+.cal .d{aspect-ratio:1;max-width:100%;border-radius:10px;display:grid;place-items:center;font-family:var(--f-num);font-size:13px;position:relative}
+.cal .d.on{background:var(--paw-soft)}
+.cal .d.on svg{position:absolute;width:62%;height:62%;fill:var(--paw);opacity:.85;transform:rotate(-12deg)}
+.cal .d.on span{position:relative;font-size:10px;align-self:start;justify-self:end;padding:2px 4px;color:var(--ink)}
+.cal .d.today{outline:1.5px solid var(--ink)}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.hist li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.hist li:last-child{border-bottom:0}
+.spark{width:100%;height:80px;display:block}
+.spark .ln{fill:none;stroke:var(--paw);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.spark .ar{fill:var(--paw-soft)}
+.spark .gd{stroke:var(--line);stroke-width:1}
+.spark text{fill:var(--muted);font-size:10px;font-family:var(--f-num)}
+.spark .pt{fill:var(--paw)}
+.inrow{display:grid;grid-template-columns:1fr auto;gap:10px}
+textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
+
+/* RPG */
+.lvrows{display:flex;flex-direction:column;gap:10px}
+.lvrow{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;background:none;border:0;padding:0;text-align:left;width:100%;font-size:13px}
+.lvrow .meter{grid-column:1/-1;height:8px}
+.lvrow.cat .meter i{background:var(--paw)}
+.lvrow .lvname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvtag{font-family:var(--f-pixel);background:var(--win-bg);color:var(--win-fg);padding:2px 8px;border-radius:4px;font-size:13px}
+.rpg{background:var(--win-bg);color:var(--win-fg);border:3px solid var(--win-fg);box-shadow:0 0 0 4px var(--win-bg);border-radius:10px;margin:4px;padding:14px 16px;font-family:var(--f-pixel);display:flex;flex-direction:column;gap:8px;text-align:left;font-size:15px;line-height:1.6}
+.rpg .dim{color:var(--win-dim)}
+.rpg .big{font-size:20px}
+.rpg hr{border:0;border-top:2px dashed var(--win-dim);opacity:.5;margin:4px 0;width:100%}
+.rpg .bar{height:10px;background:rgba(255,255,255,.16);border-radius:2px;overflow:hidden}
+.rpg .bar i{display:block;height:100%;background:var(--win-acc)}
+.rpg.catwin .bar i{background:var(--win-cat)}
+.srow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline}
+.srow small{color:var(--win-dim);margin-left:6px;font-size:12px}
+.srow .bar{grid-column:1/-1}
+.catwin .cwrap{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center}
+.explines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.explines li{display:flex;justify-content:space-between;gap:12px;color:var(--win-dim)}
+.explines li span:last-child{color:var(--win-fg)}
+.rpg .lvup{color:var(--win-acc);font-size:18px}
+.rpg .ln{animation:pop .35s both}
+@keyframes pop{from{opacity:0;transform:translateY(4px)}}
+.ach{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ach li{border:1.5px dashed var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ach li b{font-family:var(--f-display);font-size:14px}
+.ach li span{font-size:12px;color:var(--muted)}
+.ach li.on{border:1.5px solid var(--bonito);background:var(--surface)}
+.ach li.on b::before{content:"★ ";color:var(--bonito)}
+
+/* battle / gear */
+.battle{display:flex;flex-direction:column;gap:8px}
+.bfield{display:grid;grid-template-columns:1fr 104px;align-items:end;gap:8px;background:var(--surface);border:1px solid var(--line);border-bottom:5px solid var(--line);border-radius:var(--r);padding:12px 12px 0}
+.mon{position:relative;justify-self:center;width:128px;max-width:100%}
+.mon.boss{width:150px}
+.mon svg{width:100%;height:auto;display:block;animation:bob 2.4s ease-in-out infinite}
+.mon.hit svg{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.mon.down svg{opacity:.25;filter:grayscale(1);transform:rotate(80deg) translate(16px,6px);animation:none}
+.dmg{position:absolute;left:50%;top:10%;font-family:var(--f-pixel);font-size:30px;color:var(--paw);animation:dmg .9s ease-out forwards;pointer-events:none}
+@keyframes dmg{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-32px)}}
+.watcher{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted);padding-bottom:6px;gap:2px}
+.watcher .cat{animation:none}
+.mhp{display:grid;grid-template-columns:1fr auto;gap:4px 8px;font-size:13px;font-weight:700}
+.mhp .bar{grid-column:1/-1;height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.mhp .bar i{display:block;height:100%;background:var(--ok);transition:width .4s}
+.bosstag{background:var(--paw);color:var(--on-paw);padding:0 6px;border-radius:4px;font-size:11px;margin-right:4px}
+.gear{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gearchip{flex-direction:column;align-items:flex-start;justify-content:center;gap:0;min-height:58px;text-align:left}
+.gearchip small{color:var(--muted);font-size:11px;font-weight:400}
+.gearchip.locked{border-style:dashed;opacity:.6}
+.eqcat{display:flex;justify-content:center}
+.eqcat .cat{width:220px;max-width:100%}
+.stars{color:var(--bonito);letter-spacing:-.05em}
+
+/* form demo */
+.demo{gap:10px}
+.figwrap{position:relative;background:var(--bg);border-radius:14px;overflow:hidden}
+.fig{display:block;width:100%;max-width:360px;height:auto;margin:0 auto}
+.fig .floor{stroke:var(--line);stroke-width:3}
+.fig .ln,.fig .lf{fill:none;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln{stroke:var(--ink)}
+.fig .lf{stroke:var(--muted);opacity:.5}
+.fig .torso{stroke:var(--ink);stroke-width:13;stroke-linecap:round}
+.fig.front .torso{stroke-width:22}
+.fig .head{fill:var(--ink)}
+.fig .pr{fill:var(--surface-2);stroke:var(--muted);stroke-width:1.5}
+.fig .prl{fill:none;stroke:var(--muted);stroke-width:3;stroke-linecap:round}
+.fig .pw{fill:var(--paw);stroke:var(--ink);stroke-width:1.2}
+.fig .pwl{fill:none;stroke:var(--paw);stroke-width:3}
+.fig .pb{fill:none;stroke:var(--paw);stroke-width:2.5;stroke-linecap:round}
+.dcd{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-size:72px;font-weight:600;color:var(--paw);background:color-mix(in srgb,var(--bg) 70%,transparent)}
+.dphase{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-height:32px}
+.dlabel{font-family:var(--f-display);font-size:20px;font-weight:900;min-width:0}
+.dsec{font-size:24px;font-weight:600;color:var(--paw)}
+.dstrip{display:flex;gap:3px;height:8px}
+.dstrip i{display:block;background:var(--surface-2);border-radius:99px;overflow:hidden;min-width:4px}
+.dstrip b{display:block;height:100%;width:0;background:var(--paw)}
+.dctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.drep{margin-left:auto;font-weight:700;font-size:16px}
+.dpts{margin:0;padding-left:1.3em;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.dpts .ng{color:var(--paw);font-weight:700;list-style:none;margin-left:-1.3em}
+
+/* modal / toast */
+.modal{position:fixed;inset:0;background:var(--shade);z-index:60;display:grid;place-items:center;padding:16px}
+.modal .card{max-width:400px;width:100%}
+.modal .rowbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:700;z-index:70;max-width:calc(100% - 32px);text-align:center}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div id="app"></div>
+<div id="timer" hidden></div>
+<div id="toast" hidden></div>
+<script>
+'use strict';
+/* ========= utils ========= */
+const KEY = 'nekotore.v1';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => { d = new Date(d); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+const deep = o => JSON.parse(JSON.stringify(o));
+
+/* ========= master data ========= */
+const EQUIP = [
+  ['mat', 'ヨガマット'], ['chair', '安定した椅子'], ['dumbbell', 'ダンベル（可変式含む）'], ['kettlebell', 'ケトルベル'],
+  ['band', 'チューブ・ゴムバンド'], ['pullup', '懸垂バー・ぶら下がり器'], ['bench', 'トレーニングベンチ'],
+  ['barbell', 'バーベル＋ラック'], ['abroller', '腹筋ローラー'], ['jumprope', '縄跳び'], ['stepbox', '踏み台・ステップ台']
+];
+const LIMITS = [['knee', '膝'], ['back', '腰'], ['shoulder', '肩'], ['wrist', '手首']];
+const GOALS = [
+  ['diet', '体脂肪を落としたい', '引き締め・ダイエット'], ['muscle', '筋肉をつけたい', '体を大きく・強く'],
+  ['health', '健康・体力づくり', '疲れにくい体に'], ['posture', '姿勢をよくしたい', '肩こり・猫背対策']
+];
+const LEVELS = [['beginner', 'はじめて・久しぶり', '基本の動きから'], ['intermediate', 'ときどきやっている', '月に数回〜週1程度'], ['advanced', '習慣になっている', '週2回以上を半年以上']];
+const SEXES = [['male', '男性'], ['female', '女性'], ['none', '回答しない']];
+const COATS = {
+  chatora: { label: '茶トラ', base: '#F2A65A', stripe: '#C9732E', ear: '#F7C9A0', eye: '#6E9B3E' },
+  kuro: { label: '黒猫', base: '#3A3842', ear: '#6A5F6E', eye: '#E8C547' },
+  shiro: { label: '白猫', base: '#FBF8F3', ear: '#F6C6CF', eye: '#5AA0D8' },
+  mike: { label: '三毛', base: '#FBF8F3', p1: '#E99B4E', p2: '#3E3A40', ear: '#F6C6CF', eye: '#C8A23A' },
+  saba: { label: 'サバトラ', base: '#B3B7C0', stripe: '#6B707B', ear: '#E8C2C8', eye: '#7DAA4A' }
+};
+const PERS = { gentle: 'やさしい', tsundere: 'ツンデレ', hot: '熱血' };
+const BOND = [[0, 'はじめまして'], [20, 'ちょっと気になる'], [50, 'となりに座る'], [100, 'ゴロゴロいう'], [170, 'おなかを見せる'], [260, '相棒'], [380, 'ベストパートナー'], [530, '伝説のコンビ']];
+// 猫の装備 [id, 部位, 名前, レア度, こうげき, しゅび, なかよし度で貰えるLv]
+const SLOTS = [['head', 'あたま'], ['face', 'かお'], ['neck', 'くび'], ['weapon', 'ぶき'], ['back', 'せなか']];
+const GEAR = [
+  ['band', 'head', 'はちまき', 1, 2, 1, 3], ['beret', 'head', 'ベレー帽', 1, 0, 2], ['helm', 'head', '鉄のかぶと', 2, 0, 6], ['horn', 'head', '勇者のかぶと', 3, 4, 7], ['crown', 'head', '王冠', 4, 3, 6, 7], ['halo', 'head', '天使の輪', 5, 2, 12],
+  ['round', 'face', 'まるメガネ', 1, 0, 1], ['glasses', 'face', 'サングラス', 2, 2, 2, 5], ['patch', 'face', '眼帯', 2, 5, 0], ['mask', 'face', 'あやしい仮面', 3, 4, 4],
+  ['collar', 'neck', '鈴の首輪', 1, 0, 1, 2], ['tie', 'neck', '蝶ネクタイ', 1, 0, 2], ['scarf', 'neck', '勇者のマフラー', 2, 1, 4], ['medal', 'neck', '金メダル', 4, 6, 6],
+  ['stick', 'weapon', '木の枝', 1, 2, 0], ['teaser', 'weapon', 'ねこじゃらし', 1, 3, 0], ['bokuto', 'weapon', '木刀', 2, 7, 0], ['fishbone', 'weapon', '魚の骨のつえ', 3, 10, 1], ['gdumb', 'weapon', '黄金のダンベル', 4, 15, 3], ['sword', 'weapon', '伝説の剣', 5, 28, 2],
+  ['pack', 'back', 'リュック', 1, 0, 2], ['cape', 'back', '赤いマント', 2, 0, 5], ['royal', 'back', '王者のマント', 4, 2, 12], ['wings', 'back', '天使のはね', 5, 3, 16]
+].map(([id, slot, n, r, a, d, bond]) => ({ id, slot, n, r, a, d, bond }));
+const GEARM = Object.fromEntries(GEAR.map(g => [g.id, g]));
+const MONS = [
+  { k: 'slime', n: 'なまけスライム', c: '#9AD675', t: 0 }, { k: 'bat', n: 'ねぼうコウモリ', c: '#A88BD8', t: 1 },
+  { k: 'ghost', n: 'あとでやるゴースト', c: '#D7DDF5', t: 2 }, { k: 'golem', n: 'ごろごろゴーレム', c: '#C2A27F', t: 3 },
+  { k: 'slime', n: 'おやつスライム', c: '#F4A8C4', t: 4 }, { k: 'bat', n: 'よふかしコウモリ', c: '#6C76C9', t: 5 }
+];
+const BOSSES = [
+  { k: 'ghost', n: '三日坊主', c: '#F29A7A' }, { k: 'dragon', n: 'ソファードラゴン', c: '#78C2B2' },
+  { k: 'golem', n: 'リバウンド大王', c: '#9A7AE0' }, { k: 'dragon', n: 'まあいっか魔王', c: '#6A6FB0' }
+];
+const PL = { squat: '脚・お尻', hinge: 'お尻・もも裏', lunge: '脚・お尻', glute: 'お尻', push_h: '胸・腕', push_v: '肩', pull_v: '背中', pull_h: '背中', posture: '背中・姿勢', bi: '腕（力こぶ）', tri: '腕（二の腕）', core: '体幹・お腹', calf: 'ふくらはぎ', cardio: '有酸素' };
+
+// req: 各グループのどれか1つが必要 / avoid: 該当部位に不安がある人には出さない
+const EX = [
+  // squat
+  { id: 'chair_squat', n: '椅子スクワット', p: 'squat', lv: 1, req: [['chair', 'bench']], next: 'bw_squat', how: ['椅子の前に立ち、足は肩幅', 'お尻を後ろに引き、座る直前で止めて立ち上がる'], cue: '膝とつま先は同じ向きにゃ' },
+  { id: 'wall_sit', n: 'ウォールシット', p: 'squat', lv: 1, unit: 'sec', how: ['壁に背中をつけて腰を落とし、空気イスの姿勢をキープ', '膝が痛いときは角度を浅くする'], cue: '呼吸は止めないにゃ' },
+  { id: 'bw_squat', n: 'スクワット', p: 'squat', lv: 1, avoid: ['knee'], pri: .3, how: ['足を肩幅に開き、胸を張る', '太ももが床と平行になるまでしゃがんで立つ'], cue: 'かかとに体重をのせるにゃ' },
+  { id: 'goblet_squat', n: 'ゴブレットスクワット', p: 'squat', lv: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 2, avoid: ['knee'], how: ['ダンベルを胸の前で縦に持つ', '胸を張ったまま深くしゃがみ、立ち上がる'], cue: 'ひじを膝の内側に通すイメージにゃ' },
+  { id: 'bb_squat', n: 'バーベルスクワット', p: 'squat', lv: 2, req: [['barbell']], w: 1, step: 2.5, r: [6, 10], avoid: ['knee', 'back'], how: ['ラックでバーを肩にかつぐ', 'セーフティバーを必ずセットしてしゃがむ'], cue: 'セーフティは命綱にゃ' },
+  { id: 'jump_squat', n: 'ジャンプスクワット', p: 'squat', lv: 2, impact: 1, avoid: ['knee'], r: [8, 12], how: ['軽くしゃがんでから真上にジャンプ', 'つま先から静かに着地する'], cue: '着地は猫みたいに静かににゃ' },
+  { id: 'pistol_box', n: '片脚ボックススクワット', p: 'squat', lv: 3, req: [['chair', 'bench']], side: 1, r: [5, 10], avoid: ['knee'], how: ['片脚で立ち、椅子に向かってゆっくり座る', '座面にふれたら片脚で立ち上がる'], cue: 'ゆっくり下ろすのがコツにゃ' },
+  // hinge
+  { id: 'glute_bridge', n: 'ヒップリフト', p: 'hinge', lv: 1, next: 'single_bridge', how: ['あお向けで膝を立てる', 'お尻を持ち上げ、肩から膝を一直線にする'], cue: '上で1秒お尻をしめるにゃ' },
+  { id: 'single_bridge', n: '片脚ヒップリフト', p: 'hinge', lv: 2, side: 1, how: ['ヒップリフトの姿勢から片脚をのばす', '片脚でお尻を持ち上げる'], cue: '腰をそりすぎないにゃ' },
+  { id: 'superman', n: 'スーパーマン', p: 'hinge', lv: 1, how: ['うつ伏せで両手を前にのばす', '手と脚を少し浮かせて2秒止める'], cue: '高く上げなくていいにゃ' },
+  { id: 'db_rdl', n: 'ダンベルルーマニアンデッドリフト', p: 'hinge', lv: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 2, avoid: ['back'], how: ['ダンベルを持ち、膝を軽くゆるめる', '背中をまっすぐにしたままお尻を引いて上体を倒す'], cue: 'もも裏がのびるのを感じるにゃ' },
+  { id: 'kb_swing', n: 'ケトルベルスイング', p: 'hinge', lv: 2, req: [['kettlebell']], w: 1, step: 4, r: [12, 20], avoid: ['back'], how: ['股の間にケトルベルを引き、お尻で前へ押し出す', '腕ではなく腰の伸びで胸の高さまで振る'], cue: 'お尻でパンッにゃ' },
+  { id: 'bb_dl', n: 'バーベルデッドリフト', p: 'hinge', lv: 2, req: [['barbell']], w: 1, step: 5, r: [5, 8], avoid: ['back'], how: ['バーを足の中央の上に置き、背中をまっすぐにして握る', '床を押すように立ち上がる'], cue: '背中が丸まったら即中止にゃ' },
+  { id: 'hip_thrust', n: 'ヒップスラスト', p: 'glute', lv: 2, req: [['bench', 'chair']], how: ['肩甲骨の下をベンチにのせる', 'お尻を持ち上げて体を水平にする'], cue: 'あごは引いたままにゃ' },
+  // lunge / glute
+  { id: 'split_squat', n: 'スプリットスクワット', p: 'lunge', lv: 1, side: 1, avoid: ['knee'], next: 'bulgarian', how: ['脚を前後に開いて立つ', 'その場で真下に腰を落とす'], cue: '上半身はまっすぐにゃ' },
+  { id: 'reverse_lunge', n: 'リバースランジ', p: 'lunge', lv: 1, side: 1, avoid: ['knee'], how: ['片脚を後ろに大きく引いて腰を落とす', '前の脚で床を押して戻る'], cue: 'ふらついたら壁に手をつくにゃ' },
+  { id: 'step_up', n: 'ステップアップ', p: 'lunge', lv: 1, side: 1, req: [['stepbox', 'bench']], avoid: ['knee'], how: ['台に片足をのせる', 'のせた脚の力で台の上に立ち、ゆっくり下りる'], cue: '下の脚で蹴らないにゃ' },
+  { id: 'db_lunge', n: 'ダンベルランジ', p: 'lunge', lv: 2, side: 1, req: [['dumbbell']], w: 1, step: 1, avoid: ['knee'], how: ['両手にダンベルを持つ', '前に踏み出して腰を落とし、戻る'], cue: '前の膝はつま先より出すぎないにゃ' },
+  { id: 'bulgarian', n: 'ブルガリアンスクワット', p: 'lunge', lv: 2, side: 1, req: [['chair', 'bench']], r: [8, 12], avoid: ['knee'], how: ['後ろ足の甲を椅子にのせる', '前脚に体重をかけて腰を落とす'], cue: 'きついけど効くにゃ…がんばるにゃ' },
+  { id: 'clamshell', n: 'クラムシェル', p: 'glute', lv: 1, side: 1, r: [12, 20], how: ['横向きに寝て膝を曲げる', 'かかとをつけたまま上の膝を開く'], cue: 'お尻の横がじんわりするにゃ' },
+  { id: 'band_walk', n: 'バンドサイドウォーク', p: 'glute', lv: 1, req: [['band']], r: [12, 20], how: ['膝の上にバンドを巻き、軽くしゃがむ', '横に一歩ずつ歩く（往復で1回）'], cue: '膝が内に入らないようにゃ' },
+  // push horizontal
+  { id: 'wall_pushup', n: '壁腕立て伏せ', p: 'push_h', lv: 1, next: 'incline_pushup', how: ['壁に両手をつき、体をまっすぐにする', '胸を壁に近づけて押し戻す'], cue: 'お腹に力を入れるにゃ' },
+  { id: 'incline_pushup', n: '台に手をつく腕立て伏せ', p: 'push_h', lv: 1, req: [['chair', 'bench']], pri: .2, next: 'knee_pushup', how: ['椅子の座面に手をつく（壁につけて固定）', '体をまっすぐにして胸を近づける'], cue: '椅子が動かないように確認にゃ' },
+  { id: 'knee_pushup', n: '膝つき腕立て伏せ', p: 'push_h', lv: 1, avoid: ['wrist'], pri: .3, next: 'pushup', how: ['膝をついて四つんばいになり、手は肩幅より広め', '頭から膝まで一直線のまま胸を下ろす'], cue: 'お尻が上がらないようににゃ' },
+  { id: 'pushup', n: '腕立て伏せ', p: 'push_h', lv: 2, avoid: ['wrist'], next: 'decline_pushup', how: ['手を肩幅より少し広くつく', '頭からかかとまで一直線で胸を床に近づける'], cue: 'ひじは開きすぎないにゃ' },
+  { id: 'decline_pushup', n: '足上げ腕立て伏せ', p: 'push_h', lv: 3, req: [['chair', 'bench']], avoid: ['wrist', 'shoulder'], how: ['足を椅子にのせて腕立ての姿勢', 'ゆっくり胸を下ろして押し上げる'], cue: '上の胸に効くにゃ' },
+  { id: 'db_floor', n: 'ダンベルフロアプレス', p: 'push_h', lv: 1, req: [['dumbbell']], w: 1, step: 1, how: ['あお向けで膝を立て、ダンベルを胸の横に構える', '天井へまっすぐ押し上げる'], cue: '肩にやさしい胸トレにゃ' },
+  { id: 'db_bench', n: 'ダンベルベンチプレス', p: 'push_h', lv: 1, req: [['dumbbell'], ['bench']], w: 1, step: 1, pri: .3, how: ['ベンチにあお向けになり、肩甲骨を寄せる', 'ダンベルを胸の横からまっすぐ押し上げる'], cue: '下ろすときはゆっくりにゃ' },
+  { id: 'band_press', n: 'チューブチェストプレス', p: 'push_h', lv: 1, req: [['band']], how: ['背中にチューブを回して両手で持つ', '胸の前へ押し出して戻す'], cue: '押しきったら一瞬止めるにゃ' },
+  { id: 'bb_bench', n: 'バーベルベンチプレス', p: 'push_h', lv: 2, req: [['barbell'], ['bench']], w: 1, step: 2.5, r: [6, 10], avoid: ['shoulder'], how: ['セーフティをセットしてベンチに寝る', 'バーをみぞおちに下ろし押し上げる'], cue: 'ひとりのときはセーフティ必須にゃ' },
+  // push vertical
+  { id: 'pike_pushup', n: 'パイクプッシュアップ', p: 'push_v', lv: 2, avoid: ['shoulder', 'wrist'], how: ['お尻を高く上げて「へ」の字になる', '頭を床に近づけて押し戻す'], cue: '肩で押すイメージにゃ' },
+  { id: 'db_press', n: 'ダンベルショルダープレス', p: 'push_v', lv: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 1, avoid: ['shoulder'], how: ['ダンベルを肩の高さに構える', '頭の上へ押し上げて戻す'], cue: '腰をそらさないにゃ' },
+  { id: 'band_ohp', n: 'チューブショルダープレス', p: 'push_v', lv: 1, req: [['band']], avoid: ['shoulder'], how: ['チューブを足で踏み、肩の高さで持つ', '頭の上へ押し上げる'], cue: 'ゆっくり戻すにゃ' },
+  { id: 'db_lateral', n: 'サイドレイズ', p: 'push_v', lv: 1, req: [['dumbbell']], w: 1, step: 1, r: [12, 15], how: ['軽いダンベルを体の横に持つ', '肩の高さまで横に上げる'], cue: '軽い重さで十分にゃ' },
+  // pull
+  { id: 'pullup', n: '懸垂', p: 'pull_v', lv: 3, req: [['pullup']], r: [3, 8], how: ['肩幅より広くバーを握ってぶら下がる', '胸をバーに近づけるように体を引き上げる'], cue: '反動は使わないにゃ' },
+  { id: 'neg_pullup', n: 'ネガティブ懸垂', p: 'pull_v', lv: 2, req: [['pullup']], r: [3, 6], next: 'pullup', how: ['台を使ってあごがバーの上にある姿勢になる', '3〜5秒かけてゆっくり下りる'], cue: 'ゆっくりが一番効くにゃ' },
+  { id: 'dead_hang', n: 'ぶら下がり', p: 'pull_v', lv: 1, req: [['pullup']], unit: 'sec', next: 'neg_pullup', how: ['バーを握ってぶら下がる', '肩をすくめず、軽く胸を張る'], cue: '握力もきたえられるにゃ' },
+  { id: 'band_pulldown', n: 'チューブラットプルダウン', p: 'pull_v', lv: 1, req: [['band']], how: ['チューブをドアの上などに固定する', 'ひじを脇腹へ引き下ろす'], cue: '肩甲骨を下げるにゃ' },
+  { id: 'db_row', n: 'ワンハンドダンベルロウ', p: 'pull_h', lv: 1, side: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 1, how: ['片手と片膝を椅子やベンチにつく', 'ダンベルを腰のほうへ引き上げる'], cue: 'ひじを天井へ引くにゃ' },
+  { id: 'band_row', n: 'チューブロウ', p: 'pull_h', lv: 1, req: [['band']], how: ['座って足裏にチューブをかける', 'ひじを後ろへ引いて肩甲骨を寄せる'], cue: '胸を張ったままにゃ' },
+  { id: 'bb_row', n: 'バーベルロウ', p: 'pull_h', lv: 2, req: [['barbell']], w: 1, step: 2.5, avoid: ['back'], how: ['前かがみでバーを持つ', 'おへそに向かって引き上げる'], cue: '背中はまっすぐにゃ' },
+  { id: 'db_rear', n: 'リアレイズ', p: 'pull_h', lv: 1, req: [['dumbbell']], w: 1, step: 1, r: [12, 15], how: ['前かがみで軽いダンベルを持つ', '腕を横に開いて肩の後ろをしめる'], cue: '猫背にきくにゃ' },
+  { id: 'prone_w', n: 'うつ伏せWレイズ', p: 'posture', lv: 1, r: [10, 15], how: ['うつ伏せでひじを曲げ、腕をWの形にする', '胸と腕を少し浮かせ、肩甲骨を寄せる'], cue: '首はリラックスにゃ' },
+  { id: 'y_raise', n: 'うつ伏せYレイズ', p: 'posture', lv: 1, r: [10, 15], how: ['うつ伏せで腕をYの字にのばす', '親指を上に向けて腕を少し浮かせる'], cue: '肩こりさんにおすすめにゃ' },
+  { id: 'band_pa', n: 'バンドプルアパート', p: 'posture', lv: 1, req: [['band']], r: [12, 20], how: ['胸の前でチューブを肩幅で持つ', '腕をのばしたまま左右に開く'], cue: '肩甲骨をぎゅっとにゃ' },
+  // arms
+  { id: 'db_curl', n: 'ダンベルカール', p: 'bi', lv: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 1, how: ['ひじを体の横に固定する', 'ダンベルを肩へ巻き上げる'], cue: 'ひじは動かさないにゃ' },
+  { id: 'band_curl', n: 'チューブカール', p: 'bi', lv: 1, req: [['band']], how: ['チューブを足で踏んで持つ', 'ひじを固定して巻き上げる'], cue: '下ろすときもふんばるにゃ' },
+  { id: 'db_ext', n: 'ダンベルフレンチプレス', p: 'tri', lv: 1, req: [['dumbbell']], w: 1, step: 1, how: ['ダンベルを両手で頭の上に持つ', 'ひじを曲げて頭の後ろへ下ろし、のばす'], cue: '二の腕のたるみに効くにゃ' },
+  { id: 'band_kick', n: 'チューブキックバック', p: 'tri', lv: 1, req: [['band']], side: 1, how: ['前かがみでチューブを踏み、ひじを脇につける', 'ひじから先を後ろへのばす'], cue: 'のばしきって1秒にゃ' },
+  { id: 'bench_dip', n: 'ベンチディップス', p: 'tri', lv: 2, req: [['chair', 'bench']], avoid: ['shoulder', 'wrist'], how: ['椅子のふちに手をつき、お尻を前に出す', 'ひじを曲げて体を下ろし、押し戻す'], cue: '肩が痛いときはやめるにゃ' },
+  { id: 'diamond', n: 'ダイヤモンド腕立て', p: 'tri', lv: 3, avoid: ['wrist'], how: ['両手でひし形をつくって床につく', '胸を手に近づけて押し上げる'], cue: 'かなりきついにゃ' },
+  // core
+  { id: 'dead_bug', n: 'デッドバグ', p: 'core', lv: 1, r: [8, 12], pri: .2, how: ['あお向けで手足を天井へ上げる', '腰を床につけたまま、反対の手足をのばす（左右で1回）'], cue: '腰にやさしい腹筋にゃ' },
+  { id: 'plank', n: 'プランク', p: 'core', lv: 1, unit: 'sec', how: ['ひじとつま先で体を支える', '頭からかかとまで一直線をキープ'], cue: 'お尻を上げすぎないにゃ' },
+  { id: 'bird_dog', n: 'バードドッグ', p: 'core', lv: 1, side: 1, how: ['四つんばいになる', '反対の手と脚をまっすぐのばして2秒止める'], cue: 'ぐらぐらしないようににゃ' },
+  { id: 'crunch', n: 'クランチ', p: 'core', lv: 1, r: [12, 20], how: ['あお向けで膝を立てる', 'おへそをのぞきこむように肩を浮かせる'], cue: '首は引っぱらないにゃ' },
+  { id: 'side_plank', n: 'サイドプランク', p: 'core', lv: 2, unit: 'sec', side: 1, how: ['横向きでひじをつき、体を浮かせる', '体を一直線にキープ'], cue: 'わき腹がしまるにゃ' },
+  { id: 'leg_raise', n: 'レッグレイズ', p: 'core', lv: 2, avoid: ['back'], how: ['あお向けで脚をそろえる', '脚を上げ下げし、床につく直前で止める'], cue: '腰が浮いたら膝を曲げるにゃ' },
+  { id: 'ab_roll', n: '膝コロ（腹筋ローラー）', p: 'core', lv: 2, req: [['abroller']], r: [6, 12], avoid: ['back'], how: ['膝をついてローラーを握る', '腰をそらさない範囲で前へ転がして戻る'], cue: '無理に遠くまで行かないにゃ' },
+  { id: 'hang_knee', n: 'ハンギングニーレイズ', p: 'core', lv: 2, req: [['pullup']], how: ['バーにぶら下がる', '膝を胸のほうへ引き上げる'], cue: '体をゆらさないにゃ' },
+  // calf
+  { id: 'calf_raise', n: 'カーフレイズ', p: 'calf', lv: 1, r: [15, 20], how: ['壁に手をついて立つ', 'かかとを上げ下げする'], cue: '第二の心臓をきたえるにゃ' },
+  { id: 'db_calf', n: 'ダンベルカーフレイズ', p: 'calf', lv: 1, req: [['dumbbell']], w: 1, step: 2, r: [12, 20], how: ['ダンベルを持って立つ', 'かかとを高く上げ下げする'], cue: '上で1秒止めるにゃ' },
+  // cardio
+  { id: 'step_jack', n: 'ステップジャック', p: 'cardio', lv: 1, unit: 'sec', pri: .2, how: ['跳ばずに片足ずつ横へ出す', '同時に腕を頭の上で合わせる'], cue: '集合住宅でも静かにできるにゃ' },
+  { id: 'high_knee', n: 'その場もも上げ', p: 'cardio', lv: 1, unit: 'sec', how: ['その場で足ぶみ', '膝を腰の高さまで上げる'], cue: '腕もしっかりふるにゃ' },
+  { id: 'jumping_jack', n: 'ジャンピングジャック', p: 'cardio', lv: 1, unit: 'sec', impact: 1, how: ['跳びながら脚を開き、腕を頭の上へ', '跳んで元に戻る'], cue: 'リズムよくにゃ' },
+  { id: 'mountain', n: 'マウンテンクライマー', p: 'cardio', lv: 2, unit: 'sec', avoid: ['wrist'], how: ['腕立ての姿勢になる', '膝を交互に胸へ引きつける'], cue: 'お尻を上げすぎないにゃ' },
+  { id: 'rope', n: '縄跳び', p: 'cardio', lv: 1, unit: 'sec', impact: 1, req: [['jumprope']], how: ['低く、リズムよく跳ぶ', '足音が大きいときはエア縄跳びに'], cue: '下の階に気をつけるにゃ' },
+  { id: 'burpee', n: 'バーピー', p: 'cardio', lv: 3, impact: 1, r: [6, 10], avoid: ['knee', 'wrist'], how: ['しゃがんで手をつき、脚を後ろへ', '脚を戻して真上にジャンプ'], cue: '最強の脂肪燃焼にゃ' }
+];
+const EXM = Object.fromEntries(EX.map(e => [e.id, e]));
+
+const SPLITS = {
+  2: [['full', 0], ['full', 1]], 3: [['full', 0], ['full', 1], ['full', 2]],
+  4: [['upper', 0], ['lower', 0], ['upper', 1], ['lower', 1]],
+  5: [['push', 0], ['pull', 0], ['legs', 0], ['upper', 1], ['lower', 1]],
+  6: [['push', 0], ['pull', 0], ['legs', 0], ['push', 1], ['pull', 1], ['legs', 1]]
+};
+const SPLIT_NAME = { 2: '全身トレ×2パターン', 3: '全身トレ×3パターン', 4: '上半身／下半身の2分割', 5: '押す・引く・脚＋上下の5分割', 6: '押す・引く・脚の3分割×2' };
+const DAY_LABEL = { full: '全身', upper: '上半身', lower: '下半身', push: '押す日（胸・肩・腕）', pull: '引く日（背中・腕）', legs: '脚の日' };
+const TEMPLATES = {
+  full: [['squat', 'push_h', 'pull', 'hinge', 'core', 'push_v', 'calf'], ['hinge', 'pull', 'push_h', 'lunge', 'core', 'arms', 'push_v'], ['lunge', 'push_h', 'pull', 'squat', 'core', 'arms', 'calf']],
+  upper: [['push_h', 'pull_v', 'push_v', 'pull_h', 'tri', 'bi', 'core']],
+  lower: [['squat', 'hinge', 'lunge', 'glute', 'core', 'calf']],
+  push: [['push_h', 'push_v', 'push_h', 'tri', 'core']],
+  pull: [['pull_v', 'pull_h', 'posture', 'bi', 'core']],
+  legs: [['squat', 'hinge', 'lunge', 'glute', 'calf', 'core']]
+};
+const GROUPS = {
+  pull: ['pull_h', 'pull_v', 'posture'], pull_v: ['pull_v', 'pull_h', 'posture'], pull_h: ['pull_h', 'posture', 'pull_v'],
+  arms: ['bi', 'tri'], squat: ['squat', 'lunge'], lunge: ['lunge', 'squat'], hinge: ['hinge', 'glute'], glute: ['glute', 'hinge'],
+  push_v: ['push_v', 'push_h'], posture: ['posture', 'pull_h'], push_h: ['push_h'], tri: ['tri', 'push_h'], bi: ['bi', 'pull_h'],
+  core: ['core'], calf: ['calf'], cardio: ['cardio']
+};
+const WARMUP = [['首と肩をゆっくり回す', '30秒'], ['腕を大きく前後に回す', '30秒'], ['股関節を回す（片脚ずつ）', '30秒'], ['その場で足ぶみ', '60秒']];
+
+/* ========= cat lines ========= */
+const LINES = {
+  gentle: {
+    morning: ['おはようにゃ、{name}。今日もいっしょに体を動かそうにゃ', '朝の筋トレは一日を気持ちよくしてくれるにゃ'],
+    day: ['こんにちはにゃ。すきま時間でちょっとだけやってみる？', '{name}、今日の調子はどうにゃ？'],
+    night: ['今日もおつかれさまにゃ。軽く動くとよく眠れるにゃ', '夜は無理せず、できる分だけでいいにゃ'],
+    absent: ['{name}、おかえりにゃ！会えてうれしいにゃ。今日は5分だけでも十分にゃ', 'ひさしぶりにゃ。責めたりしないにゃ。またいっしょに始めようにゃ'],
+    back: ['少し間があいたけど、ここからまた積み上げようにゃ'],
+    today_done: ['今日はもう終わってるにゃ！えらすぎるにゃ。ゆっくり休んでにゃ', '今日のぶんは完璧にゃ。筋肉は休んでるときに育つにゃ'],
+    week_done: ['今週の目標、もう達成してるにゃ！すごいにゃ'],
+    start: ['いっしょにがんばろうにゃ。まずは体をほぐすにゃ'],
+    set: ['いいフォームだったにゃ', 'その調子にゃ！', 'ナイスにゃ。呼吸を整えてにゃ'],
+    last: ['これがこの種目の最後にゃ。出しきろうにゃ'],
+    rest: ['水を飲むといいにゃ', '深呼吸にゃ。すーはー'],
+    finish: ['おつかれさまにゃ！今日の{name}、とってもかっこよかったにゃ', 'やりきったにゃ！ぼくもうれしいにゃ'],
+    mini: ['5分だけでも、やったかやらないかは大ちがいにゃ'],
+    pet: ['ごろごろ…にゃ', 'もっとなでてもいいにゃ', 'えへへ、くすぐったいにゃ'],
+    pet_again: ['今日はいっぱいなでてもらったにゃ。またあしたもにゃ'],
+    levelup: ['なかよし度が上がったにゃ！'],
+    hard: ['きつかったにゃ？次は少し軽くするにゃ。無理は禁物にゃ'],
+    ok: ['ちょうどいい強さだったにゃ。この調子でいこうにゃ'],
+    easy: ['余裕だったにゃ？次はちょっと増やしてみるにゃ']
+  },
+  tsundere: {
+    morning: ['べ、別に待ってたわけじゃないにゃ。…やるなら付き合ってやるにゃ', '朝からトレーニング？ふーん、悪くないにゃ'],
+    day: ['ひまなら筋トレでもしたらどうにゃ', '…なんにゃ、こっち見て。やるのかにゃ？'],
+    night: ['こんな時間まで起きてるなら、少しは動くにゃ', '夜ふかしは筋肉の敵にゃ。さっさと終わらせて寝るにゃ'],
+    absent: ['…遅いにゃ。ずっと待ってなんかなかったにゃ。今日は5分でいいから顔を見せるにゃ', 'べつにさみしくなかったにゃ！…ほんとにゃ。ほら、始めるにゃ'],
+    back: ['サボってた分、取り返すにゃ。…無理しない程度ににゃ'],
+    today_done: ['今日はもうやったんだから、休むのも仕事にゃ', 'ふん、今日はよくやったにゃ。…ほめてないにゃ'],
+    week_done: ['今週のノルマ達成？…ま、まあまあにゃ'],
+    start: ['ちゃんと見ててやるにゃ。手を抜いたらわかるにゃ'],
+    set: ['…今のは悪くなかったにゃ', 'まだいけるにゃ', 'フォーム、ちょっとはマシになったにゃ'],
+    last: ['最後にゃ。ここで手を抜いたら許さないにゃ'],
+    rest: ['休憩は短めにゃ。…でも水は飲むにゃ'],
+    finish: ['…やるじゃないかにゃ。ちょっとだけ見直したにゃ', 'おつかれ。べ、別に感動してないにゃ'],
+    mini: ['5分？…まあ、ゼロよりずっとマシにゃ'],
+    pet: ['さ、さわるにゃ！…もうちょっとだけならいいにゃ', 'ゴロゴロなんて言ってないにゃ'],
+    pet_again: ['今日はもう十分にゃ！…あしたもなでるにゃ？'],
+    levelup: ['…ちょっとだけ、なかよくなってやってもいいにゃ'],
+    hard: ['きつかった？…次は少し減らしてやるにゃ。ケガされたら困るにゃ'],
+    ok: ['ちょうどいい？ならこのままいくにゃ'],
+    easy: ['余裕？じゃあ次は増やすにゃ。泣き言は聞かないにゃ']
+  },
+  hot: {
+    morning: ['おはようにゃ！今日も筋肉と語り合うにゃ！', '朝だにゃ！最高の一日はスクワットから始まるにゃ！'],
+    day: ['燃えてるかにゃ！？ちょっとだけでも動くにゃ！', '{name}！今日も一歩前進するにゃ！'],
+    night: ['夜だって筋肉は待ってるにゃ！でも睡眠も大事にゃ！', '一日の締めくくりに、熱い1セットにゃ！'],
+    absent: ['{name}！戻ってきてくれたにゃ！それだけで100点にゃ！今日は5分からにゃ！', '休んだっていいにゃ！大事なのは戻ってくることにゃ！'],
+    back: ['再スタートにゃ！ここからまた燃えるにゃ！'],
+    today_done: ['今日のミッション完了にゃ！休むのも立派なトレーニングにゃ！', '完璧にゃ！筋肉が喜んでるにゃ！'],
+    week_done: ['今週の目標クリアにゃ！最高にゃ！'],
+    start: ['いくにゃ！まずはウォームアップで体に火をつけるにゃ！'],
+    set: ['ナイスファイトにゃ！', 'いいぞいいぞにゃ！', '筋肉が育ってる音がするにゃ！'],
+    last: ['ラストセットにゃ！魂を込めるにゃ！'],
+    rest: ['呼吸を整えるにゃ！次も全力にゃ！'],
+    finish: ['やりきったにゃ！{name}は最高のパートナーにゃ！', '今日の努力は絶対に裏切らないにゃ！'],
+    mini: ['5分でも全力なら立派なトレーニングにゃ！'],
+    pet: ['うおお、元気が出るにゃ！', 'ゴロゴロ…ハッ、気合いが入ったにゃ！'],
+    pet_again: ['今日の充電は満タンにゃ！続きはあしたにゃ！'],
+    levelup: ['なかよし度アップにゃ！ぼくたち最強コンビにゃ！'],
+    hard: ['よく耐えたにゃ！次は少し調整するにゃ。ケガしないのが一番にゃ！'],
+    ok: ['ベストな強度にゃ！このまま進むにゃ！'],
+    easy: ['余裕だったか！次はレベルアップにゃ！']
+  }
+};
+function say(k) {
+  const per = S.profile?.cat?.per || 'gentle';
+  const arr = LINES[per][k] || LINES.gentle[k];
+  return esc(pick(arr)).replace(/\{name\}/g, esc(S.profile?.name || 'きみ'));
+}
+
+/* ========= state ========= */
+function fresh() { return { v: 1, profile: null, program: null, history: [], weights: [], prog: {}, xp: 0, lastPet: null, volAdj: 0, items: [], equip: {}, rot: 0, session: null, lastResult: null }; }
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { } return fresh(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+let S = load();
+if (S.profile && S.profile.cat.name === 'ムギ') S.profile.cat.name = 'にゃんだ';
+if (S.profile) giftBond();
+if (S.acc) { const m = { collar: 'collar', band: 'band', glasses: 'glasses', crown: 'crown' }[S.acc]; if (m) { if (!S.items.includes(m)) S.items.push(m); S.equip[GEARM[m].slot] = m; } delete S.acc; }
+let view = S.profile ? (S.session ? 'session' : 'home') : 'onboard';
+let step = 0, draft = null, editing = false, obErr = '', modal = null, homeMsg = null, homeMood = 'normal';
+let calOff = 0, openHow = null, sessMsg = '', rpeMsg = null, backupText = '';
+
+/* ========= body/program logic ========= */
+const bmi = p => p.weight / ((p.height / 100) ** 2);
+const bmiLabel = b => b < 18.5 ? 'やせ' : b < 25 ? '標準' : b < 30 ? '肥満（1度）' : '肥満（2度以上）';
+const lvIdx = p => ({ beginner: 0, intermediate: 1, advanced: 2 })[p.level];
+const allowImpact = p => !(p.limits.includes('knee') || bmi(p) >= 28 || p.age >= 60);
+const canUse = (e, p) => (e.req || []).every(g => g.some(q => p.equipment.includes(q))) && !(e.avoid || []).some(a => p.limits.includes(a)) && (allowImpact(p) || !e.impact);
+
+function candidates(slot, p, used) {
+  const grp = GROUPS[slot] || [slot];
+  const maxLv = lvIdx(p) + 1;
+  const ok = e => grp.includes(e.p) && canUse(e, p) && !used.has(e.id);
+  let list = EX.filter(e => ok(e) && e.lv <= maxLv);
+  if (!list.length) list = EX.filter(ok);
+  const score = e => -grp.indexOf(e.p) * 2 - Math.abs(e.lv - maxLv) * .8 + (e.w ? 1 : 0) + (e.pri || 0)
+    + (p.goal === 'muscle' ? (e.w ? .8 : 0) - (e.impact ? .8 : 0) - (e.unit === 'sec' && e.p !== 'core' ? .6 : 0) : 0);
+  return list.map(e => ({ e, s: score(e) })).sort((a, b) => b.s - a.s);
+}
+function makeItem(e, slot, p) {
+  const L = lvIdx(p), g = p.goal;
+  let sets = { muscle: [3, 3, 4], diet: [2, 3, 3], health: [2, 3, 3], posture: [2, 3, 3] }[g][L];
+  if (p.age >= 60) sets = Math.min(sets, 3);
+  let rest = { muscle: 90, diet: 40, health: 60, posture: 60 }[g] + (p.age >= 60 ? 15 : 0);
+  if (['cardio', 'calf', 'posture', 'core'].includes(e.p)) rest = Math.min(rest, 45);
+  const it = { id: e.id, slot, sets, rest };
+  if (e.unit === 'sec') it.sec = e.id === 'dead_hang' ? [15, 20, 30][L] : e.p === 'cardio' ? [20, 30, 40][L] : [20, 30, 45][L];
+  else {
+    let r = e.r || { muscle: [8, 12], diet: [12, 15], health: [10, 15], posture: [10, 15] }[g];
+    if (!e.w && !e.r && g === 'muscle') r = [8, 15];
+    it.lo = r[0]; it.hi = r[1];
+  }
+  return it;
+}
+function estSec(it, sets = it.sets) {
+  const e = EXM[it.id];
+  return sets * ((it.sec || it.hi * 3.5) * (e.side ? 2 : 1) + it.rest) + 40;
+}
+function buildDay(type, v, p) {
+  const slots = [...TEMPLATES[type][Math.min(v, TEMPLATES[type].length - 1)]];
+  if (p.goal === 'diet') slots.splice(3, 0, 'cardio');
+  if (p.goal === 'posture' && !slots.includes('posture')) slots.splice(2, 0, 'posture');
+  const used = new Set(), items = [];
+  const budget = p.minutes * 60;
+  let total = p.minutes <= 10 ? 120 : 180;
+  for (const slot of slots) {
+    const c = candidates(slot, p, used);
+    if (!c.length) continue;
+    const close = c.filter(x => x.s > c[0].s - 1.2);
+    const e = close[v % close.length].e;
+    const it = makeItem(e, slot, p);
+    const t = estSec(it);
+    if (items.length >= (p.minutes <= 10 ? 2 : 3) && total + t > budget) break;
+    items.push(it); used.add(e.id); total += t;
+  }
+  if (total > budget) items.forEach(it => { if (it.sets > 2) it.sets--; });
+  return { type, label: DAY_LABEL[type], items };
+}
+const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it), 0)) / 60);
+
+function buildProgram(p) {
+  const days = SPLITS[p.days].map(([t, v]) => buildDay(t, v, p));
+  const b = bmi(p);
+  const R = [];
+  R.push(`BMI ${b.toFixed(1)}（${bmiLabel(b)}）。目標「${GOALS.find(g => g[0] === p.goal)[1]}」に合わせて組みました。`);
+  R.push(`週${p.days}回なので「${SPLIT_NAME[p.days]}」。同じ部位は48時間以上あけて回復させます。`);
+  R.push({
+    muscle: '筋肉をつけるため、8〜12回で限界がくる重さ×3〜4セット、休憩は長め（90秒）。',
+    diet: '脂肪燃焼のため、12〜15回×テンポよく短い休憩（40秒）＋有酸素の種目を入れています。',
+    health: '体力づくりのため、10〜15回をフォーム重視で。無理なく続く量にしています。',
+    posture: '姿勢改善のため、背中・肩甲骨まわりの種目を多めにしています。'
+  }[p.goal]);
+  const eq = p.equipment.length ? p.equipment.map(k => EQUIP.find(x => x[0] === k)[1]).join('・') : 'なし（自重のみ）';
+  R.push(`使える道具：${eq}`);
+  if (p.limits.length) R.push(`${p.limits.map(k => LIMITS.find(x => x[0] === k)[1]).join('・')}に負担の大きい種目を外しています。痛みが出たらすぐ中止してください。`);
+  if (!allowImpact(p)) R.push('関節を守るため、ジャンプなど着地の衝撃がある種目は除外しています。');
+  if (p.age >= 60) R.push('年齢に合わせてセット数を控えめに、休憩を長めにしています。');
+  R.push(`1回あたり約${p.minutes}分に収まる種目数にしています。`);
+  const pr = p.goal === 'muscle' ? [1.6, 2.0] : [1.2, 1.6];
+  R.push(`たんぱく質の目安：1日 ${Math.round(p.weight * pr[0])}〜${Math.round(p.weight * pr[1])}g（体重×${pr[0]}〜${pr[1]}g）。持病のある方は医師の指示を優先してください。`);
+  return { days, reasons: R, created: Date.now() };
+}
+const nextDayIdx = () => S.rot % S.program.days.length;
+const kcalOf = minutes => Math.round((S.profile.goal === 'diet' ? 5 : 3.5) * S.profile.weight * minutes / 60 * 1.05);
+function rxText(it) {
+  const e = EXM[it.id], pr = S.prog[it.id] || {};
+  const amt = it.sec ? `${it.sec + (pr.sec || 0)}秒` : `${it.lo + (pr.extra || 0)}〜${it.hi + (pr.extra || 0)}回`;
+  return `${it.sets}セット × ${amt}${e.side ? '（左右）' : ''}${e.w && pr.w ? ` · ${pr.w}kg` : ''}`;
+}
+
+/* ========= bond / week ========= */
+function bondLv(xp) { let i = 0; BOND.forEach((b, k) => { if (xp >= b[0]) i = k; }); return i + 1; }
+function weekStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function weekCount(ref = Date.now()) { const s = weekStart(ref).getTime(), e = s + 7 * 864e5; return S.history.filter(h => h.ts >= s && h.ts < e).length; }
+function streak() {
+  const tgt = S.profile.days, cnt = {};
+  S.history.forEach(h => { const k = ymd(weekStart(h.ts)); cnt[k] = (cnt[k] || 0) + 1; });
+  let s = 0; const d = weekStart(new Date());
+  if ((cnt[ymd(d)] || 0) >= tgt) s++;
+  d.setDate(d.getDate() - 7);
+  while ((cnt[ymd(d)] || 0) >= tgt) { s++; d.setDate(d.getDate() - 7); }
+  return s;
+}
+const daysSinceLast = () => S.history.length ? Math.floor((weekStartDay(Date.now()) - weekStartDay(S.history[S.history.length - 1].ts)) / 864e5) : null;
+function weekStartDay(t) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+const trainedToday = () => S.history.some(h => ymd(h.ts) === ymd(Date.now()));
+
+function pickHomeMsg() {
+  const ds = daysSinceLast(), hr = new Date().getHours(), per = S.profile.cat.per;
+  if (trainedToday()) { homeMsg = say('today_done'); homeMood = 'happy'; }
+  else if (ds !== null && ds >= 7) { homeMsg = say('absent'); homeMood = 'sad'; }
+  else if (ds !== null && ds >= 3) { homeMsg = say('back'); homeMood = per === 'hot' ? 'fire' : 'normal'; }
+  else if (weekCount() >= S.profile.days) { homeMsg = say('week_done'); homeMood = 'happy'; }
+  else if (hr >= 5 && hr < 11) { homeMsg = say('morning'); homeMood = per === 'hot' ? 'fire' : 'normal'; }
+  else if (hr >= 11 && hr < 18) { homeMsg = say('day'); homeMood = 'normal'; }
+  else { homeMsg = say('night'); homeMood = per === 'hot' ? 'fire' : 'sleepy'; }
+}
+
+/* ========= RPG ========= */
+const STATS = [['arm', 'ちから', '上半身'], ['leg', 'ふんばり', '下半身'], ['core', 'バランス', '体幹・姿勢'], ['sta', 'スタミナ', '持久力']];
+const P2S = { push_h: 'arm', push_v: 'arm', pull_v: 'arm', pull_h: 'arm', bi: 'arm', tri: 'arm', squat: 'leg', hinge: 'leg', lunge: 'leg', glute: 'leg', calf: 'leg', core: 'core', posture: 'core', cardio: 'sta' };
+const TYPES = { arm: 'パワー型', leg: 'ふんばり型', core: 'バランス型', sta: '持久型' };
+const TITLES = [[1, '筋トレみならい'], [3, 'かけだし戦士'], [5, '腕立ての使い手'], [8, '鉄の意志をもつ者'], [12, '筋肉の騎士'], [16, 'しなやかな勇者'], [20, '伝説のトレーニー'], [30, 'にゃんだの英雄']];
+const needP = L => Math.round(60 * L ** 1.4), needS = L => Math.round(40 * L ** 1.3);
+function lvOf(exp, need) { let L = 1; while (exp >= need(L)) { exp -= need(L); L++; } return { L, cur: exp, need: need(L) }; }
+const titleOf = L => TITLES.filter(t => L >= t[0]).pop()[1];
+const catBonus = () => (bondLv(S.xp) - 1) * 5;
+const pname = () => esc(S.profile.name || 'あなた');
+function calcExp(h, bonus = 0) {
+  const sx = { arm: 0, leg: 0, core: 0, sta: 0 }; let sets = 0, extra = 0;
+  h.items.forEach(it => {
+    const e = EXM[it.id]; if (!e) return;
+    const k = P2S[e.p] || 'core';
+    it.sets.forEach(x => { sets++; sx[k] += 5; if (e.w && x.w > 0) { extra += 2; sx[k] += 2; } });
+  });
+  sx.sta += Math.floor((h.dur || 0) / 60);
+  const lines = [[`${sets}セットをこなした`, sets * 5 + extra], [h.mini ? '5分だけモードをやりきった' : 'トレーニングをやりきった', h.mini ? 15 : 30]];
+  if (h.win) lines.push([h.boss ? 'ボスをたおした' : 'モンスターをたおした', h.boss ? 50 : 20]);
+  if (h.prs) lines.push([`自己ベストを ${h.prs}回 こえた`, h.prs * 20]);
+  if (h.week) lines.push(['今週のクエストを達成した', 100]);
+  let total = lines.reduce((a, l) => a + l[1], 0);
+  if (bonus) { const b = Math.round(total * bonus / 100); lines.push([`${esc(S.profile.cat.name)}のはげまし +${bonus}%`, b]); total += b; }
+  return { lines, total, sx };
+}
+function player() {
+  let exp = 0; const sx = { arm: 0, leg: 0, core: 0, sta: 0 };
+  S.history.forEach(h => {
+    if (h.exp == null) { const r = calcExp(h); h.exp = r.total; h.sx = r.sx; }
+    exp += h.exp; for (const k in sx) sx[k] += h.sx[k] || 0;
+  });
+  const top = STATS.map(x => x[0]).sort((a, b) => sx[b] - sx[a])[0];
+  return { exp, lv: lvOf(exp, needP), st: Object.fromEntries(STATS.map(([k]) => [k, lvOf(sx[k], needS)])), type: exp ? TYPES[top] : 'まだ見ぬ型' };
+}
+function maxStreak() {
+  if (!S.history.length) return 0;
+  const tgt = S.profile.days, cnt = {};
+  S.history.forEach(h => { const k = ymd(weekStart(h.ts)); cnt[k] = (cnt[k] || 0) + 1; });
+  const d = weekStart(S.history[0].ts), end = weekStart(Date.now()).getTime();
+  let best = 0, cur = 0;
+  while (d.getTime() <= end) {
+    if ((cnt[ymd(d)] || 0) >= tgt) best = Math.max(best, ++cur);
+    else if (d.getTime() !== end) cur = 0;
+    d.setDate(d.getDate() + 7);
+  }
+  return best;
+}
+function achievements() {
+  const H = S.history, n = H.length;
+  const sets = H.reduce((a, h) => a + h.items.reduce((b, it) => b + it.sets.length, 0), 0);
+  const prs = H.reduce((a, h) => a + (h.prs || 0), 0), mini = H.filter(h => h.mini).length;
+  const morning = H.filter(h => { const x = new Date(h.ts).getHours(); return x >= 5 && x < 10; }).length;
+  let comeback = false; for (let i = 1; i < n; i++) if (H[i].ts - H[i - 1].ts >= 14 * 864e5) comeback = true;
+  const ms = maxStreak();
+  return [
+    ['はじめの一歩', '初めてトレーニングする', n >= 1], ['習慣のめばえ', 'トレーニング10回', n >= 10],
+    ['継続の達人', 'トレーニング50回', n >= 50], ['百戦錬磨', 'トレーニング100回', n >= 100],
+    ['ひと月の誓い', '4週連続で週の目標を達成', ms >= 4], ['セットの山', '合計500セット', sets >= 500],
+    ['限界突破', '自己ベストを10回更新', prs >= 10], ['朝の勇者', '朝（5〜10時）に10回', morning >= 10],
+    ['ちりも積もれば', '5分だけモードを10回', mini >= 10], ['不死鳥', '2週間以上あけて再開する', comeback]
+  ];
+}
+
+/* ========= battle & gear ========= */
+function catPower() { let a = 0, d = 0; Object.values(S.equip).forEach(id => { const g = GEARM[id]; if (g) { a += g.a; d += g.d; } }); const b = bondLv(S.xp) * 2; return { a: a + b, d: d + b }; }
+function giftBond() { const L = bondLv(S.xp), got = GEAR.filter(g => g.bond && L >= g.bond && !S.items.includes(g.id)); got.forEach(g => S.items.push(g.id)); return got; }
+function dmgOf(e, r, w, lv, crit) {
+  const base = e.unit === 'sec' ? r / 3 : r;
+  return Math.max(1, Math.round(base * (1 + .15 * (lv - 1)) * (w > 0 ? 1 + w / 20 : 1) * (e.side ? 1.5 : 1) * 2 * (crit ? 1.5 : 1)));
+}
+function pickMonster(mini, no, L) {
+  if (mini) return { k: 'slime', n: 'こなまけスライム', c: '#C9E8AE', boss: false };
+  if (no % 5 === 0) return { ...BOSSES[(no / 5 - 1) % BOSSES.length], boss: true };
+  const pool = MONS.filter(m => m.t <= Math.floor((L - 1) / 2));
+  return { ...pick(pool), boss: false };
+}
+function catIdle() {
+  const w = GEARM[S.equip.weapon];
+  const a = ['みまもっている', 'あくびをした', 'けづくろいをしている', 'ひなたぼっこをしている', 'しっぽを ふっている', 'ねむそうにしている', 'おうえんしている（気持ちだけ）', 'そうびを みせびらかしている', 'まるくなった'];
+  if (w) a.push(`${w.n}を ぴかぴかに みがいている`, `${w.n}を ふりまわす ふりをした`, `${w.n}を まくらにしている`);
+  if (Object.keys(S.equip).length >= 3) a.push('そうびが おもくて うごけない');
+  return pick(a);
+}
+function dropGear(mini, boss) {
+  if (mini && Math.random() < .5) return null;
+  const roll = (rs, ws) => { let x = Math.random() * ws.reduce((a, b) => a + b, 0); for (let i = 0; i < rs.length; i++) { x -= ws[i]; if (x < 0) return rs[i]; } return rs[0]; };
+  const r = boss ? roll([3, 4, 5], [50, 35, 15]) : mini ? roll([1, 2], [80, 20]) : roll([1, 2, 3, 4], [50, 30, 15, 5]);
+  const free = GEAR.filter(g => !g.bond && !S.items.includes(g.id));
+  const c = free.filter(g => g.r === r).length ? free.filter(g => g.r === r) : free.filter(g => g.r <= r).length ? free.filter(g => g.r <= r) : free;
+  return c.length ? pick(c) : null;
+}
+const stars = r => `<span class="stars">${'★'.repeat(r)}</span>`;
+function monSVG(m) {
+  const ink = '#2B2A30', L = `stroke="${ink}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`, c = m.c;
+  const zz = `<text x="92" y="22" font-family="DotGothic16,monospace" font-size="16" fill="#8C90AA">z</text><text x="104" y="10" font-family="DotGothic16,monospace" font-size="11" fill="#8C90AA">z</text>`;
+  const b = {
+    slime: `<path d="M12 106 Q6 64 60 20 Q114 64 108 106 Z" fill="${c}" ${L}/><ellipse cx="42" cy="48" rx="8" ry="5" fill="#fff" opacity=".55"/><path d="M36 72 h14 M70 72 h14" fill="none" ${L} stroke-width="4"/><path d="M50 88 q10 7 20 0" fill="none" ${L}/>`,
+    bat: `<path d="M42 58 Q16 26 4 62 Q18 56 22 74 Q30 62 42 72Z M78 58 Q104 26 116 62 Q102 56 98 74 Q90 62 78 72Z" fill="${c}" ${L}/><path d="M44 52 L47 32 L56 46 Z M76 52 L73 32 L64 46Z" fill="${c}" ${L}/><circle cx="60" cy="66" r="22" fill="${c}" ${L}/><path d="M49 64 h8 M63 64 h8" fill="none" ${L}/><path d="M54 76 L57 81 L60 76 L63 81 L66 76" fill="#fff" ${L} stroke-width="2"/>${zz}`,
+    ghost: `<path d="M28 106 L28 52 Q28 16 60 16 Q92 16 92 52 L92 106 L81 96 L70 106 L60 96 L50 106 L39 96 Z" fill="${c}" ${L}/><path d="M40 54 h12 M68 54 h12" fill="none" ${L} stroke-width="4"/><ellipse cx="60" cy="74" rx="6" ry="8" fill="${ink}"/>`,
+    golem: `<rect x="12" y="56" width="16" height="36" rx="4" fill="${c}" ${L}/><rect x="92" y="56" width="16" height="36" rx="4" fill="${c}" ${L}/><rect x="26" y="48" width="68" height="58" rx="8" fill="${c}" ${L}/><rect x="38" y="16" width="44" height="34" rx="6" fill="${c}" ${L}/><path d="M45 32 h10 M65 32 h10" fill="none" ${L} stroke-width="4"/><path d="M40 70 l10 8 l-4 10 M80 62 l-8 10" fill="none" ${L} stroke-width="2"/>`,
+    dragon: `<path d="M86 86 Q114 82 116 54 Q106 72 92 72Z" fill="${c}" ${L}/><path d="M60 64 Q70 30 94 40 Q82 48 80 64Z" fill="${c}" ${L}/><ellipse cx="66" cy="86" rx="40" ry="22" fill="${c}" ${L}/><circle cx="30" cy="62" r="19" fill="${c}" ${L}/><path d="M20 47 L15 30 L28 43 Z M36 45 L41 28 L45 45 Z" fill="${c}" ${L}/><path d="M20 60 h8 M34 60 h7" fill="none" ${L} stroke-width="3.5"/><path d="M18 71 q9 4 18 0" fill="none" ${L}/>${zz}`
+  }[m.k];
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="${m.n}">${b}</svg>`;
+}
+function gearArt(eq, L) {
+  const out = { behind: '', front: '', hide: {} }, has = id => Object.values(eq).includes(id);
+  if (has('wings')) out.behind += `<path d="M150 104 Q134 46 172 20 Q172 50 196 46 Q186 80 176 104 Z" fill="#FFFFFF" ${L}/><path d="M162 70 Q172 60 186 58" fill="none" ${L}/>`;
+  const f = [];
+  if (has('pack')) f.push(`<rect x="146" y="82" width="40" height="30" rx="8" fill="#B07A3E" ${L}/><path d="M152 95 h28" fill="none" ${L}/>`);
+  if (has('cape')) f.push(`<path d="M112 101 L196 101 L200 166 Q160 182 124 168 Z" fill="#D9363E" ${L}/>`);
+  if (has('royal')) f.push(`<path d="M112 101 L196 101 L200 166 Q160 182 124 168 Z" fill="#6B3FA0" ${L}/><path d="M124 162 Q160 175 199 159" fill="none" stroke="#F2C14E" stroke-width="5" stroke-linecap="round"/>`);
+  if (has('collar')) f.push(`<path d="M34 136 Q66 149 112 134" fill="none" stroke="#E5484D" stroke-width="4.5" stroke-linecap="round"/><circle cx="69" cy="145" r="4.5" fill="#F2C14E" ${L}/>`);
+  if (has('tie')) f.push(`<path d="M69 140 L52 131 L52 150 Z M69 140 L86 131 L86 150 Z" fill="#E5484D" ${L}/><circle cx="69" cy="140" r="4" fill="#B8262C" ${L}/>`);
+  if (has('scarf')) f.push(`<path d="M30 130 Q68 146 116 128 L118 140 Q68 160 28 142 Z" fill="#E5484D" ${L}/><path d="M96 142 L112 180 L100 182 L88 146Z" fill="#E5484D" ${L}/>`);
+  if (has('medal')) f.push(`<path d="M50 128 L66 150 M88 128 L72 150" fill="none" stroke="#3A6FD8" stroke-width="5" stroke-linecap="round"/><circle cx="69" cy="156" r="10" fill="#F2C14E" ${L}/><path d="M69 151 v10" fill="none" stroke="#8A6510" stroke-width="2.5" stroke-linecap="round"/>`);
+  if (has('round')) f.push(`<g fill="none" stroke="#6B4A2B" stroke-width="2.6"><circle cx="39.4" cy="77" r="9"/><circle cx="88" cy="75.4" r="9"/><path d="M48.4 76.6 L79 76"/></g>`);
+  if (has('glasses')) { out.hide.both = 1; f.push(`<g fill="#22232E" ${L}><rect x="30" y="70" width="19" height="13" rx="4"/><rect x="78" y="68" width="19" height="13" rx="4"/></g><path d="M49 76 L78 74" fill="none" ${L}/>`); }
+  if (has('patch')) { out.hide.left = 1; f.push(`<path d="M12 62 L120 70" fill="none" ${L}/><ellipse cx="39.4" cy="77" rx="10" ry="8" fill="#2B2A30"/>`); }
+  if (has('mask')) f.push(`<path fill-rule="evenodd" d="M22 68 Q64 58 108 66 L106 86 Q64 80 24 88 Z M33 77 a6.5 5 0 1 0 13 0 a6.5 5 0 1 0 -13 0 Z M81.5 75.4 a6.5 5 0 1 0 13 0 a6.5 5 0 1 0 -13 0 Z" fill="#7A3FB0" ${L}/>`);
+  if (has('band')) f.push(`<path d="M15 56 L125 53 L127 63 L13 66 Z" fill="#E5484D" ${L}/><path d="M125 57 l15 -7 l-3 11 Z M125 60 l12 9 l-11 2 Z" fill="#E5484D" ${L}/>`);
+  if (has('beret')) f.push(`<path d="M44 57 Q46 30 72 30 Q98 32 96 54 Q70 46 44 57Z" fill="#2F3E73" ${L}/><circle cx="72" cy="28" r="3" fill="#2F3E73" ${L}/>`);
+  if (has('helm')) f.push(`<path d="M30 60 Q34 22 70 22 Q106 22 110 58 Q70 50 30 60Z" fill="#A9B0BD" ${L}/><path d="M30 60 Q70 50 110 58 L111 65 Q70 57 29 67Z" fill="#7D8594" ${L}/>`);
+  if (has('horn')) f.push(`<path d="M38 44 Q20 30 24 10 Q32 30 46 36Z M102 42 Q118 28 116 8 Q108 28 94 35Z" fill="#F4F1E6" ${L}/><path d="M30 60 Q34 22 70 22 Q106 22 110 58 Q70 50 30 60Z" fill="#E8B83A" ${L}/><circle cx="70" cy="40" r="4" fill="#3A6FD8" ${L}/>`);
+  if (has('crown')) f.push(`<path d="M56 54 L54 33 L63 43 L69 28 L75 43 L84 33 L82 54 Z" fill="#F2C14E" ${L}/><circle cx="69" cy="47" r="2.5" fill="#E5484D"/>`);
+  if (has('halo')) f.push(`<ellipse cx="69" cy="32" rx="18" ry="5" fill="none" stroke="#F2C14E" stroke-width="4"/>`);
+  if (has('stick')) f.push(`<path d="M100 212 L136 122 M122 158 L138 148" fill="none" stroke="#8B5A2B" stroke-width="5" stroke-linecap="round"/><ellipse cx="140" cy="145" rx="6" ry="3.5" fill="#6FB24A"/>`);
+  if (has('teaser')) f.push(`<path d="M100 212 L134 128" fill="none" stroke="#C9A36A" stroke-width="3" stroke-linecap="round"/><ellipse cx="137" cy="118" rx="7" ry="14" transform="rotate(22 137 118)" fill="#D8C27A" ${L}/>`);
+  if (has('bokuto')) f.push(`<path d="M102 212 L138 118" fill="none" stroke="#2B2A30" stroke-width="10" stroke-linecap="round"/><path d="M102 212 L138 118" fill="none" stroke="#C48A4A" stroke-width="6" stroke-linecap="round"/><path d="M100 190 L122 198" fill="none" stroke="#2B2A30" stroke-width="5" stroke-linecap="round"/>`);
+  if (has('fishbone')) f.push(`<path d="M100 212 L132 132" fill="none" stroke="#2B2A30" stroke-width="7" stroke-linecap="round"/><path d="M100 212 L132 132" fill="none" stroke="#EDE7DA" stroke-width="3.5" stroke-linecap="round"/><path d="M110 176 l12 6 M115 163 l12 6 M120 150 l12 6" fill="none" ${L}/><path d="M132 132 L124 112 L144 118 Z" fill="#EDE7DA" ${L}/>`);
+  if (has('gdumb')) f.push(`<rect x="96" y="199" width="56" height="7" rx="3" fill="#B8912A" ${L}/><rect x="86" y="188" width="13" height="30" rx="3" fill="#F2C14E" ${L}/><rect x="149" y="188" width="13" height="30" rx="3" fill="#F2C14E" ${L}/>`);
+  if (has('sword')) f.push(`<path d="M106 196 L140 106" fill="none" stroke="#2B2A30" stroke-width="11" stroke-linecap="round"/><path d="M106 196 L140 106" fill="none" stroke="#DDE6F2" stroke-width="6.5" stroke-linecap="round"/><path d="M94 191 L118 201" fill="none" stroke="#2B2A30" stroke-width="9" stroke-linecap="round"/><path d="M94 191 L118 201" fill="none" stroke="#F2C14E" stroke-width="5" stroke-linecap="round"/><path d="M104 202 L100 213" fill="none" stroke="#7A4A2A" stroke-width="7" stroke-linecap="round"/>`);
+  out.front = f.join('');
+  return out;
+}
+
+/* ========= drawing ========= */
+// トレーナー「にゃんだ」：ユーザーの手描きを線ごとトレースした絵
+function catSVG({ mood = 'normal', eq = {}, cls = 'cat' } = {}) {
+  const ink = '#2B2A30', L = `stroke="${ink}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"`;
+  const happy = mood === 'happy' || mood === 'fire', G = gearArt(eq, L);
+  const eye = (x, y) => {
+    if (G.hide.both || (G.hide.left && x < 60)) return '';
+    if (mood === 'sleepy') return `<path d="M${x - 4.5} ${y} Q${x} ${y + 3} ${x + 4.5} ${y}" fill="none" ${L}/>`;
+    return `<circle cx="${x}" cy="${y}" r="2.4" fill="${ink}"/>`;
+  };
+  let brows = '';
+  if (mood === 'fire') brows = `<path d="M32 68 L45 72 M95 66 L82 70" fill="none" ${L}/>`;
+  if (mood === 'sad') brows = `<path d="M33 71 L45 67 M94 69 L82 65" fill="none" ${L}/>`;
+  const mouth = mood === 'sad'
+    ? `<path d="M51 100 C53 92 61 92 63 100 C65 92 73 92 76 100" fill="none" ${L}/>`
+    : `<path d="M51 93 C53 104 61 104 63 93 C65 104 73 104 76 95" fill="none" ${L}/>`;
+  const blush = happy ? `<ellipse cx="31" cy="101" rx="7" ry="3.5" fill="#F28CA6" opacity=".55"/><ellipse cx="103" cy="98" rx="7" ry="3.5" fill="#F28CA6" opacity=".55"/>` : '';
+  const zz = mood === 'sleepy' ? `<text x="134" y="40" font-family="Fredoka,sans-serif" font-size="18" font-weight="600" fill="#8C90AA">z</text><text x="146" y="24" font-family="Fredoka,sans-serif" font-size="13" font-weight="600" fill="#8C90AA">z</text>` : '';
+  return `<svg class="${cls}" viewBox="0 0 264 220" role="img" aria-label="トレーナー猫">${G.behind}
+    <path d="M24 213 L36 104 L5 85 L33 11 L51 55 L87 54 L113.6 5.6 L130 79 L113 100 L204 101 L259 14 L214 213 L191 176 L164 209 L167 173 L58 168.4 Z" fill="#FFFFFF" ${L}/>
+    <path d="M55.6 170 L62 205 L81 169 Z" fill="#FFFFFF" ${L}/>
+    <path d="M33.6 14 Q31 40 18 52 M109 12 Q102 34 120 44 M43 180 L40 191" fill="none" ${L}/>
+    ${brows}${eye(39.4, 77)}${eye(88, 75.4)}${blush}${mouth}
+    <path d="M41.4 106.4 L49.4 112.4 L43 111.6 Z M86.4 109 L95 105 L95 110.4 Z" fill="none" ${L}/>
+    <path d="M62.4 124 Q59 114 67 113 Q74 114 72.4 122 L69 123 L66 119 L65.6 124" fill="none" ${L}/>
+    <path d="M208.4 119.6 L214.4 128 M213.6 119 L208 126" fill="none" ${L}/>
+    ${G.front}${zz}
+  </svg>`;
+}
+const PAW = `<svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="10" ry="8.5"/><ellipse cx="8" cy="16" rx="4" ry="5"/><ellipse cx="15.5" cy="9" rx="4" ry="5"/><ellipse cx="24.5" cy="9" rx="4" ry="5"/><ellipse cx="32" cy="16" rx="4" ry="5"/></svg>`;
+const ICON = {
+  status: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  plan: '<path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  log: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  settings: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'
+};
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const myCat = (mood, cls) => catSVG({ mood, eq: S.equip, cls });
+
+/* ========= form demo (お手本アニメーション) ========= */
+// 角度は「真下=0・前=90・真上=180・後ろ=-90」。体は右向き。hN/hF は手の位置（IKで肘を決める）
+const FLY = 170;
+const BASEP = { t: 180, uaN: 0, faN: 0, uaF: 0, faF: 0, thN: 0, snN: 0, thF: 0, snF: 0, ft: 90, ftF: 90, jy: 0 };
+const SEG = { t: 50, ua: 26, fa: 24, th: 30, sn: 30, ft: 11 };
+const A2 = (u, f) => ({ uaN: u, faN: f, uaF: u, faF: f }), L2 = (t, s) => ({ thN: t, snN: s, thF: t, snF: s });
+const PH = (d1, d2, a, b, hold = .3, hl = '') => [[1, d1, a], [1, hold, hl], [0, d2, b], [0, .4, '']];
+const PU_PTS = ['頭からかかとまで一直線', 'ひじは体から45度くらいに開く', 'お腹とお尻に力を入れる'];
+const MOT = {
+  squat: { an: 'ankN', at: [120, FLY], P: [A2(10, 10), { t: 140, ...L2(82, -32), ...A2(92, 92) }], ph: PH(2, 1, 'しゃがむ', '立ち上がる', .4, '止める'), pts: ['膝とつま先は同じ向き', 'かかとは床につけたまま', '胸を張り、背中はまっすぐ'], ng: '膝だけが前に出て、かかとが浮く' },
+  chairsquat: { an: 'ankN', at: [120, FLY], props: [{ k: 'chair', x: 70, y: 140, w: 34, back: 'left' }], P: [A2(10, 10), { t: 145, ...L2(72, -25), ...A2(90, 90) }], ph: PH(2, 1, '座る直前まで下ろす', '立ち上がる', .4, '止める'), pts: ['お尻を後ろへ引くように', '膝とつま先は同じ向き', '座りこまずに止めて立つ'], ng: '勢いよくドスンと座る' },
+  goblet: { an: 'ankN', at: [120, FLY], props: [{ k: 'db', j: 'handN', v: 1 }], P: [A2(20, 165), { t: 140, ...L2(82, -32), ...A2(45, 175) }], ph: PH(2, 1, 'しゃがむ', '立ち上がる', .4, '止める'), pts: ['ダンベルは胸にくっつけたまま', '胸を張って深くしゃがむ', 'かかとで床を押して立つ'], ng: '背中が丸まる' },
+  bbsquat: { an: 'ankN', at: [120, FLY], props: [{ k: 'bar', j: 'sh', r: 15 }], P: [A2(-50, 150), { t: 135, ...L2(82, -32), ...A2(-40, 150) }], ph: PH(2, 1.2, 'しゃがむ', '立ち上がる'), pts: ['セーフティバーを必ずセット', '背中はまっすぐ固める', '膝とつま先は同じ向き'], ng: '腰が丸まる・膝が内に入る' },
+  wallsit: { an: 'hip', at: [100, 116], props: [{ k: 'wall', x: 86 }], P: [{ ax: 100, ay: 116, ...L2(45, 0) }, { ax: 100, ay: 140, ...L2(90, 0) }], ph: [[1, 1.5, '壁にそって腰を落とす'], [1, 3, 'キープ', 'k'], [0, 1, 'ゆっくり戻る'], [0, .5, '']], pts: ['背中を壁にぴったりつける', '膝の真下にかかと', '呼吸は止めない'], ng: '膝がつま先より前に出る' },
+  jumpsquat: { an: 'ankN', at: [120, FLY], P: [{}, { t: 140, ...L2(82, -32), ...A2(-40, -40) }, { jy: -30, ft: 25, ftF: 25, ...A2(170, 170) }], ph: [[1, 1, 'しゃがむ'], [2, .35, '真上にジャンプ'], [1, .45, '静かに着地'], [0, .7, '立つ']], pts: ['着地は膝をやわらかく', 'つま先から静かに下りる', '膝とつま先は同じ向き'], ng: 'ドスンと着地する' },
+  pistol: { an: 'ankN', at: [130, FLY], props: [{ k: 'chair', x: 82, y: 146, w: 32, back: 'left' }], P: [{ thF: 70, snF: 85, ...A2(90, 90) }, { t: 135, thN: 82, snN: -30, thF: 88, snF: 88, ...A2(92, 92) }], ph: PH(2.5, 1.2, 'ゆっくり座る', '片脚で立つ'), pts: ['ゆっくり下ろすのがいちばん大事', '膝が内に入らないように', '腕を前に出してバランス'], ng: 'ドスンと座りこむ' },
+  rdl: { an: 'ankN', at: [120, FLY], props: [{ k: 'db', j: 'handN' }], P: [{}, { t: 100, ...L2(18, 2) }], ph: PH(2, 1, 'お尻を後ろへ引く', 'お尻をしめて立つ', .4), pts: ['背中はまっすぐのまま', '膝は軽くゆるめるだけ', 'ダンベルは脚にそわせる'], ng: '背中が丸まる' },
+  swing: { an: 'ankN', at: [115, FLY], props: [{ k: 'kb', j: 'handN' }], P: [{ t: 115, ...L2(25, -8), ...A2(-25, -25) }, A2(95, 95)], ph: [[1, .6, 'お尻で前へ押し出す'], [1, .2, ''], [0, .6, '股の間へ振り戻す'], [0, .1, '']], pts: ['腕ではなくお尻の力で振る', '背中はまっすぐ', '上で体を一直線に'], ng: 'しゃがんで腕で持ち上げる' },
+  deadlift: { an: 'ankN', at: [110, FLY], props: [{ k: 'bar', j: 'handN', r: 18 }], P: [{ t: 125, ...L2(65, -20), hN: [124, 152], hF: [124, 152] }, { hN: [116, 110], hF: [116, 110] }], ph: [[1, 1.5, '床を押して立ち上がる'], [1, .5, '胸を張る'], [0, 2, '背中まっすぐで下ろす'], [0, .5, '']], pts: ['バーは足の中央の真上', '背中はまっすぐ固める', 'バーを体の近くに通す'], ng: '背中が丸まったまま引く' },
+  bridge: { an: 'sh', at: [55, 163], P: [{ t: -90, ...L2(135, 45), ...A2(90, 90) }, { t: -70, ...L2(110, 26), ...A2(90, 90) }], ph: PH(1, 1.5, 'お尻を持ち上げる', 'ゆっくり下ろす', 1, 'お尻をしめる'), pts: ['肩から膝まで一直線', '上で1秒お尻をしめる', '腰をそらしすぎない'], ng: '腰をそらして持ち上げる' },
+  bridge1: { an: 'sh', at: [55, 163], P: [{ t: -90, ...L2(135, 45), thF: 120, snF: 120, ...A2(90, 90) }, { t: -70, ...L2(110, 26), thF: 110, snF: 110, ...A2(90, 90) }], ph: PH(1, 1.5, 'お尻を持ち上げる', 'ゆっくり下ろす', 1, 'お尻をしめる'), pts: ['のばした脚は太ももと一直線', '骨盤を水平にたもつ', '上で1秒止める'], ng: 'お尻が片方に傾く' },
+  thrust: { an: 'sh', at: [70, 140], props: [{ k: 'bench', x: 8, y: 142, w: 64 }], P: [{ t: -115, ...L2(105, 55), ...A2(-90, -90) }, { t: -90, ...L2(80, 34), ...A2(-90, -90) }], ph: PH(1, 1.5, 'お尻を持ち上げる', 'ゆっくり下ろす', 1, 'お尻をしめる'), pts: ['上で体を水平に', 'あごは引いたまま', 'すねは床と垂直に'], ng: '腰をそらす' },
+  superman: { an: 'hip', at: [120, 163], P: [{ t: 90, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(90, 90) }, { t: 100, ...L2(-100, -103), ft: -95, ftF: -95, ...A2(106, 106) }], ph: PH(1, 1, '手と脚を浮かせる', 'ゆっくり下ろす', 2, '2秒止める'), pts: ['高く上げなくていい', '首は自然にのばす', 'お尻をしめる'], ng: '反動で大きくそる' },
+  wraise: { an: 'hip', at: [120, 163], P: [{ t: 90, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(95, 95) }, { t: 100, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(-55, 100) }], ph: PH(1, 1.5, 'ひじを後ろへ引いて胸を浮かせる', 'ゆっくり戻す', 1, '肩甲骨を寄せる'), pts: ['肩甲骨を寄せる意識', '首はリラックス', '腰で反らない'], ng: '首だけを持ち上げる' },
+  yraise: { an: 'hip', at: [120, 163], P: [{ t: 90, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(95, 95) }, { t: 98, ...L2(-90, -90), ft: -90, ftF: -90, ...A2(112, 112) }], ph: PH(1, 1.5, '胸と腕を少し浮かせる', 'ゆっくり下ろす', 1, '止める'), pts: ['親指を上に向ける', '肩をすくめない', '小さな動きでOK'], ng: '腰を反らせて高く上げる' },
+  split: { an: 'ankN', at: [140, FLY], P: [{ thN: 25, snN: 0, thF: -25, snF: -25, ftF: 50 }, { thN: 85, snN: -5, thF: -12, snF: -78, ftF: 20 }], ph: PH(2, 1, '真下に腰を落とす', '前足で押し上げる'), pts: ['上体はまっすぐ', '前の膝はつま先より出しすぎない', '後ろの膝は床すれすれまで'], ng: '前の膝が内側に入る' },
+  revlunge: { an: 'ankN', at: [140, FLY], P: [{}, { thN: 85, snN: -5, thF: -12, snF: -78, ftF: 20 }], ph: PH(1.5, 1, '片脚を後ろへ引いて腰を落とす', '前足で押して戻る'), pts: ['ふらつくときは壁に手を', '上体はまっすぐ', '前の膝とつま先は同じ向き'], ng: '前のめりになる' },
+  bulgarian: { an: 'ankN', at: [150, FLY], props: [{ k: 'bench', x: 56, y: 140, w: 48 }], P: [{ thN: 20, snN: 0, thF: -35, snF: -92, ftF: -95 }, { thN: 80, snN: -8, thF: -20, snF: -150, ftF: -150 }], ph: PH(2, 1, '前脚に体重をのせて腰を落とす', '前脚で立ち上がる'), pts: ['体重はほぼ前脚に', '上体は少し前傾でOK', '前の膝が内に入らないように'], ng: '後ろ脚で踏んばる' },
+  stepup: { an: 'ankN', at: [158, 150], props: [{ k: 'box', x: 140, y: 153, w: 52 }], P: [{ thN: 70, snN: -25, thF: -10, snF: -10 }, { thN: 0, snN: 0, thF: 40, snF: -30 }], ph: PH(1.5, 2, 'のせた脚で台の上に立つ', 'ゆっくり下りる', .4), pts: ['台の上の脚の力で上がる', '下の脚で蹴らない', '下りるときもゆっくり'], ng: '下の脚で勢いよく蹴る' },
+  pushup: { an: 'toeN', at: [36, FLY], P: [{ t: 111, ...L2(-69, -69), ft: 10, ftF: 10, hN: [135, FLY], hF: [135, FLY] }, { t: 92, ...L2(-88, -88), ft: 10, ftF: 10, hN: [135, FLY], hF: [135, FLY] }], ph: PH(2, 1, '胸を床に近づける', '床を押して戻る'), pts: PU_PTS, ng: 'お尻が落ちる・上がる' },
+  kneepush: { an: 'kneeN', at: [70, 167], P: [{ t: 129, ...L2(-51, -95), ft: -90, ftF: -90, hN: [138, FLY], hF: [138, FLY] }, { t: 99, ...L2(-81, -95), ft: -90, ftF: -90, hN: [138, FLY], hF: [138, FLY] }], ph: PH(2, 1, '胸を床に近づける', '床を押して戻る'), pts: ['頭から膝まで一直線', '手は肩の真下より少し外', 'お腹に力を入れる'], ng: 'お尻だけ後ろに引ける' },
+  inclinepush: { an: 'toeN', at: [30, FLY], props: [{ k: 'chair', x: 100, y: 128, w: 36, back: 'right' }], P: [{ t: 135, ...L2(-45, -45), ft: 30, ftF: 30, hN: [114, 126], hF: [114, 126] }, { t: 115, ...L2(-65, -65), ft: 30, ftF: 30, hN: [114, 126], hF: [114, 126] }], ph: PH(2, 1, '胸を台に近づける', '押し戻す'), pts: ['椅子は壁につけて固定', '体は一直線', 'ひじを開きすぎない'], ng: '椅子が動く・腰が落ちる' },
+  wallpush: { an: 'toeN', at: [88, FLY], props: [{ k: 'wall', x: 160 }], P: [{ t: 160, ...L2(-20, -20), hN: [159, 68], hF: [159, 68] }, { t: 150, ...L2(-30, -30), hN: [159, 68], hF: [159, 68] }], ph: PH(2, 1, '胸を壁に近づける', '壁を押して戻る'), pts: ['体はまっすぐ一枚の板のように', '手は肩の高さ', 'お腹に力を入れる'], ng: 'お尻が後ろに引ける' },
+  declinepush: { an: 'toeN', at: [34, 124], props: [{ k: 'chair', x: 8, y: 126, w: 36, back: 'left' }], P: [{ t: 95, ...L2(-85, -85), ft: 20, ftF: 20, hN: [140, FLY], hF: [140, FLY] }, { t: 75, ...L2(-105, -105), ft: 20, ftF: 20, hN: [140, FLY], hF: [140, FLY] }], ph: PH(2, 1, '胸を床に近づける', '押し戻す'), pts: ['体は一直線', '首をすくめない', 'ゆっくり下ろす'], ng: '腰が反る' },
+  pike: { an: 'toeN', at: [60, FLY], P: [{ t: 52, ...L2(-25, -25), ft: 30, ftF: 30, hN: [156, FLY], hF: [156, FLY] }, { t: 45, ...L2(-35, -35), ft: 30, ftF: 30, hN: [156, FLY], hF: [156, FLY] }], ph: PH(2, 1, '頭を床に近づける', '肩で押し戻す'), pts: ['お尻を高く上げたまま', '頭は手の少し前へ', '肩で押すイメージ'], ng: 'お尻が下がって普通の腕立てになる' },
+  dip: { an: 'ankN', at: [150, FLY], props: [{ k: 'chair', x: 72, y: 130, w: 40, back: 'left' }], P: [{ ...L2(70, 5), hN: [110, 128], hF: [110, 128] }, { ...L2(100, 5), hN: [110, 128], hF: [110, 128] }], ph: PH(2, 1, 'ひじを曲げて体を下ろす', '押し戻す'), pts: ['体は椅子の近くを通す', 'ひじは後ろへ曲げる', '肩が痛ければ浅めに'], ng: '肩をすくめて深く下りる' },
+  floorpress: { an: 'sh', at: [60, 164], props: [{ k: 'db', j: 'handN' }], P: [{ t: -90, ...L2(135, 45), ...A2(90, 180) }, { t: -90, ...L2(135, 45), ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり下ろす'), pts: ['ひじが床にふれたら押し上げる', '手首はまっすぐ', '肩甲骨を寄せる'], ng: 'ひじをドンと床に落とす' },
+  benchpress: { an: 'sh', at: [56, 136], props: [{ k: 'bench', x: 30, y: 140, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(55, 180) }, { t: -90, thN: 90, snN: 0, thF: 90, snF: 0, ...A2(180, 180) }], ph: PH(1, 2, 'まっすぐ押し上げる', 'ゆっくり胸まで下ろす'), pts: ['肩甲骨を寄せて胸を張る', '足は床にしっかりつける', '下ろすときはゆっくり'], ng: 'お尻が浮く' },
+  bandpress: { an: 'ankN', at: [110, FLY], props: [{ k: 'band', a: 'handN', b: 'back' }], P: [A2(-30, 90), A2(90, 90)], ph: PH(1, 1.5, '胸の前へ押し出す', 'ゆっくり戻す', .5, '止める'), pts: ['肩をすくめない', '胸を張ったまま', '押しきって一瞬止める'], ng: '背中が丸まる' },
+  ohp: { an: 'ankN', at: [115, FLY], props: [{ k: 'db', j: 'handN' }], P: [A2(30, 180), A2(178, 178)], ph: PH(1, 2, '頭の上へ押し上げる', 'ゆっくり下ろす'), pts: ['腰を反らさない', 'お腹に力を入れる', 'ひじを伸ばしきる'], ng: '腰を反らして押す' },
+  lateral: { v: 'f', an: 'hip', at: [120, 110], props: [{ k: 'db', j: 'handN' }, { k: 'db', j: 'handF' }], P: [A2(8, 8), A2(88, 92)], ph: PH(1, 2, '肩の高さまで横に上げる', 'ゆっくり下ろす'), pts: ['軽い重さで十分', '肩をすくめない', 'ひじは軽く曲げたまま'], ng: '反動で振り上げる' },
+  pullup: { an: 'handN', at: [125, 18], props: [{ k: 'pbar', x: 125, y: 18 }], P: [{ ...A2(178, 178), ...L2(28, -70) }, { ...A2(35, 178), ...L2(30, -70) }], ph: PH(1.5, 2, '胸をバーに近づける', 'ゆっくり下りる', .4), pts: ['反動を使わない', '肩をすくめず、胸を張る', '下りるときもゆっくり'], ng: '脚を振って反動で上がる' },
+  pulldown: { an: 'ankN', at: [115, FLY], props: [{ k: 'door', x: 140, y: 8 }, { k: 'band', a: 'handN', b: [140, 8] }], P: [A2(165, 172), A2(25, 165)], ph: PH(1, 2, 'ひじを脇腹へ引き下ろす', 'ゆっくり戻す', .4), pts: ['肩甲骨を下げる', '胸を張る', 'ひじから引く'], ng: '背中が丸まる' },
+  dbrow: { an: 'ankN', at: [84, FLY], props: [{ k: 'bench', x: 74, y: 130, w: 96 }, { k: 'db', j: 'handN' }], P: [{ t: 95, thN: -5, snN: 0, thF: 53, snF: -90, ftF: -90, hF: [138, 130] }, { t: 95, thN: -5, snN: 0, thF: 53, snF: -90, ftF: -90, uaN: -80, faN: 0, hF: [138, 130] }], ph: PH(1, 2, 'ひじを天井へ引く', 'ゆっくり下ろす', .4, '上で止める'), pts: ['背中は床と平行', 'ひじを体にそわせて引く', '体をねじらない'], ng: '体をひねって持ち上げる' },
+  bandrow: { an: 'hip', at: [80, 163], props: [{ k: 'band', a: 'handN', b: 'toeN' }], P: [{ ...L2(90, 90), ft: 180, ftF: 180, ...A2(95, 95) }, { ...L2(90, 90), ft: 180, ftF: 180, ...A2(-25, 90) }], ph: PH(1, 2, 'ひじを後ろへ引く', 'ゆっくり戻す', .5, '肩甲骨を寄せる'), pts: ['胸を張ったまま', 'ひじを体にそわせる', '肩をすくめない'], ng: '上体を後ろに倒して引く' },
+  bbrow: { an: 'ankN', at: [110, FLY], props: [{ k: 'bar', j: 'handN', r: 15 }], P: [{ t: 120, ...L2(25, -10) }, { t: 120, ...L2(25, -10), ...A2(-60, 5) }], ph: PH(1, 2, 'おへそへ引き上げる', 'ゆっくり下ろす'), pts: ['背中はまっすぐ固定', '上体の角度を変えない', 'ひじを後ろへ引く'], ng: '上体を起こして反動で引く' },
+  rearfly: { an: 'ankN', at: [110, FLY], props: [{ k: 'db', j: 'handN' }], P: [{ t: 110, ...L2(20, -5) }, { t: 110, ...L2(20, -5), ...A2(-75, -75) }], ph: PH(1, 2, '腕を横へ開く', 'ゆっくり下ろす'), pts: ['軽い重さで', '肩の後ろをしめる', '背中はまっすぐ'], ng: '反動で振り上げる' },
+  pullapart: { v: 'f', an: 'hip', at: [120, 110], props: [{ k: 'band', a: 'handN', b: 'handF' }], P: [A2(50, 60), A2(90, 90)], ph: PH(1, 1.5, '腕を左右に開く', 'ゆっくり戻す', .5), pts: ['腕はのばしたまま', '肩甲骨をぎゅっと寄せる', '肩をすくめない'], ng: 'ひじが曲がる' },
+  curl: { an: 'ankN', at: [115, FLY], props: [{ k: 'db', j: 'handN' }], P: [A2(5, 5), A2(8, 160)], ph: PH(1, 2, '肩へ巻き上げる', 'ゆっくり下ろす'), pts: ['ひじは体の横で固定', '反動を使わない', '下ろすときもゆっくり'], ng: '体をそらして振り上げる' },
+  french: { an: 'ankN', at: [115, FLY], props: [{ k: 'db', j: 'handN', v: 1 }], P: [{ uaN: 172, faN: -188, uaF: 172, faF: -188 }, { uaN: 172, faN: -30, uaF: 172, faF: -30 }], ph: [[1, 2, 'ひじを曲げて頭の後ろへ下ろす'], [1, .3, ''], [0, 1, 'のばす'], [0, .4, '']], pts: ['ひじは天井へ向けたまま', 'ひじを開きすぎない', '腰を反らさない'], ng: 'ひじが前後に動く' },
+  kickback: { an: 'ankN', at: [110, FLY], props: [{ k: 'band', a: 'handN', b: 'ankN' }], P: [{ t: 120, ...L2(25, -10), uaN: -60, faN: 0, uaF: 25, faF: 25 }, { t: 120, ...L2(25, -10), uaN: -60, faN: -60, uaF: 25, faF: 25 }], ph: PH(1, 1.5, 'ひじから先を後ろへのばす', 'ゆっくり戻す', .5, 'のばしきる'), pts: ['ひじは脇につけて固定', 'のばしきって1秒', '上体の角度を変えない'], ng: 'ひじが下がる' },
+  deadbug: { an: 'sh', at: [60, 163], P: [{ t: -90, ...A2(180, 180), ...L2(180, 90) }, { t: -90, uaN: 255, faN: 255, uaF: 180, faF: 180, thN: 180, snN: 90, thF: 100, snF: 100 }], ph: PH(1.5, 1.5, '反対の手と脚をのばす', 'もどす', .4), pts: ['腰を床に押しつけたまま', '息をはきながらのばす', 'ゆっくり動く'], ng: '腰が床から浮く' },
+  plank: { an: 'toeN', at: [40, FLY], P: [{ t: 100, ...L2(-80, -80), ft: 10, ftF: 10, ...A2(0, 90) }], ph: [[0, 3, '一直線でキープ', 'k']], pts: ['お尻を上げすぎない・下げない', 'おへそを背骨に引き寄せる', '呼吸は止めない'], ng: '腰が反って落ちる' },
+  sideplank: { an: 'toeN', at: [40, FLY], P: [{ t: 100, ...L2(-80, -80), ft: 10, ftF: 10, uaN: 0, faN: 90, uaF: 180, faF: 180 }], ph: [[0, 3, '一直線でキープ', 'k']], pts: ['横向きで体を一直線に', 'お尻が下がらないように', 'ひじは肩の真下'], ng: '腰が落ちる' },
+  crunch: { an: 'hip', at: [120, 163], P: [{ t: -90, ...L2(135, 45), ...A2(90, 90) }, { t: -112, ...L2(135, 45), ...A2(75, 80) }], ph: PH(1, 1.5, 'おへそをのぞきこむ', 'ゆっくり戻す', .5), pts: ['首は引っぱらない', '肩甲骨が浮くくらいで十分', '息をはきながら上がる'], ng: '反動で起き上がる' },
+  legraise: { an: 'hip', at: [130, 163], P: [{ t: -90, ...L2(84, 84), ft: 180, ftF: 180, ...A2(90, 90) }, { t: -90, ...L2(172, 172), ft: 95, ftF: 95, ...A2(90, 90) }], ph: PH(1, 2, '脚を上げる', '床すれすれまで下ろす'), pts: ['腰を床につけたまま', '反動を使わない', 'きついときは膝を曲げる'], ng: '腰が浮いて反る' },
+  abroll: { an: 'kneeN', at: [80, 167], props: [{ k: 'roller', j: 'handN' }], P: [{ t: 125, ...L2(25, -90), ft: -90, ftF: -90, hN: [114, 161], hF: [114, 161] }, { t: 100, ...L2(60, -90), ft: -90, ftF: -90, hN: [150, 161], hF: [150, 161] }], ph: PH(2, 1.5, '腰を反らさず前へ転がす', 'お腹の力で戻る'), pts: ['腰を反らさない範囲で', 'お腹に力を入れ続ける', '無理に遠くまで行かない'], ng: '腰が反って落ちる' },
+  birddog: { an: 'kneeN', at: [80, 167], P: [{ t: 111, ...L2(0, -90), ft: -90, ftF: -90 }, { t: 111, thN: 0, snN: -90, thF: -95, snF: -95, ft: -90, ftF: -90, uaN: 100, faN: 100 }], ph: PH(1.2, 1, '反対の手と脚をのばす', 'もどす', 2, '2秒止める'), pts: ['背中を水平に保つ', '手と脚は床と平行まで', 'ぐらぐらしないように'], ng: '腰が反る・体が傾く' },
+  calf: { an: 'toeN', at: [128, FLY], props: [{ k: 'wall', x: 168 }], P: [{ hN: [166, 72], hF: [166, 72] }, { ft: 40, ftF: 40, hN: [166, 72], hF: [166, 72] }], ph: PH(1, 1.5, 'かかとを上げる', 'ゆっくり下ろす', 1, '上で止める'), pts: ['親指の付け根で押す', '上で1秒止める', 'ゆっくり下ろす'], ng: '反動ではずむ' },
+  stepjack: { v: 'f', an: 'hip', at: [120, 110], P: [{}, { thN: 24, snN: 24, ...A2(160, 175) }, { thF: 24, snF: 24, ...A2(160, 175) }], ph: [[1, .5, '片足を横へ・腕を上へ'], [0, .5, 'もどす'], [2, .5, '反対の足を横へ'], [0, .5, 'もどす']], pts: ['跳ばずにリズムよく', '腕は大きく', '背すじをのばす'], ng: '猫背になる' },
+  jack: { v: 'f', an: 'hip', at: [120, 110], P: [{}, { ...L2(18, 18), ...A2(165, 172), jy: -6 }], ph: [[1, .4, '跳んで開く'], [0, .4, '跳んでとじる']], pts: ['つま先で軽く跳ぶ', '腕は頭の上で合わせる', '着地はやわらかく'], ng: 'かかとからドスンと着地' },
+  highknee: { an: 'hip', at: [115, 110], P: [{ thN: 85, snN: 0, uaN: -35, faN: 40, uaF: 40, faF: 140 }, { thF: 85, snF: 0, uaN: 40, faN: 140, uaF: -35, faF: 40 }], ph: [[1, .4, '膝を腰の高さへ'], [0, .4, '反対の膝を上げる']], pts: ['腕もしっかりふる', '背すじをのばす', '着地はやわらかく'], ng: '上体が後ろに倒れる' },
+  mountain: { an: 'sh', at: [138, 120], P: [{ t: 111, thN: 55, snN: -60, thF: -69, snF: -69, ft: 10, ftF: 10, hN: [138, FLY], hF: [138, FLY] }, { t: 111, thN: -69, snN: -69, thF: 55, snF: -60, ft: 10, ftF: 10, hN: [138, FLY], hF: [138, FLY] }], ph: [[1, .35, '膝を胸へ（左右交互）'], [0, .35, '反対の膝']], pts: ['お尻を上げすぎない', '肩は手の真上', 'リズムよく'], ng: 'お尻が高く上がる' },
+  rope: { an: 'ankN', at: [120, FLY], props: [{ k: 'rope' }], P: [A2(25, 70), { ...A2(25, 70), jy: -10, ft: 40, ftF: 40 }], ph: [[1, .25, '低く跳ぶ'], [0, .25, '']], pts: ['低く、つま先で', '手首で回す', '足音が大きいときはエア縄跳び'], ng: '高く跳びすぎる' },
+  burpee: { an: 'hip', at: [110, 110], P: [{ ax: 110, ay: 110 }, { ax: 99, ay: 144, t: 120, ...L2(85, -40) }, { ax: 96, ay: 138, t: 111, ...L2(-69, -69), ft: 10, ftF: 10 }, { ax: 110, ay: 85, ...A2(170, 175), ft: 30, ftF: 30 }], ph: [[1, .6, 'しゃがんで手をつく'], [2, .5, '脚を後ろへ'], [1, .5, '脚をもどす'], [3, .4, '真上にジャンプ'], [0, .5, '着地']], pts: ['手は肩の真下につく', '脚を戻したら胸を張る', '着地はやわらかく'], ng: '腰が反ったまま脚を戻す' },
+  clam: { v: 'f', an: 'hip', at: [128, 156], rot: -90, P: [{ ...L2(4, -6), ...A2(178, 178) }, { thN: 40, snN: -5, thF: 4, snF: -6, ...A2(178, 178) }], ph: PH(1, 1.5, '上の膝を開く', 'ゆっくり閉じる', .5), pts: ['かかとはつけたまま', '骨盤を後ろに倒さない', 'お尻の横を意識'], ng: '体ごと後ろに倒れる' },
+  sidewalk: { v: 'f', an: 'hip', at: [120, 114], props: [{ k: 'band', a: 'kneeN', b: 'kneeF' }], P: [L2(8, 8), { thN: 22, snN: 18, thF: 8, snF: 8 }], ph: [[1, .7, '横へ一歩'], [0, .7, '足をよせる']], pts: ['軽くしゃがんだまま', '膝が内に入らないように', 'つま先は正面'], ng: '上体が左右にゆれる' }
+};
+MOT.dblunge = { ...MOT.revlunge, props: [{ k: 'db', j: 'handN' }] };
+MOT.bbbench = { ...MOT.benchpress, props: [{ k: 'bench', x: 30, y: 140, w: 96 }, { k: 'bar', j: 'handN', r: 11 }] };
+MOT.bandohp = { ...MOT.ohp, props: [{ k: 'band', a: 'handN', b: 'ankN' }] };
+MOT.bandcurl = { ...MOT.curl, props: [{ k: 'band', a: 'handN', b: 'ankN' }] };
+MOT.negpull = { ...MOT.pullup, ph: [[1, .8, '台を使って上の姿勢へ'], [0, 4, '4秒かけてゆっくり下りる'], [0, .6, '']] };
+MOT.hang = { ...MOT.pullup, ph: [[0, 3, 'キープ', 'k']], pts: ['肩をすくめず軽く胸を張る', '手は肩幅', '呼吸を続ける'], ng: '肩が耳に近づく' };
+MOT.hangknee = { ...MOT.pullup, P: [{ ...A2(178, 178), ...L2(5, -20) }, { ...A2(178, 178), ...L2(100, 5) }], ph: PH(1, 1.5, '膝を胸へ引き上げる', 'ゆっくり下ろす'), pts: ['体を振らない', 'お腹で引き上げる', '下ろすときもゆっくり'], ng: '反動でブランコのようにゆれる' };
+MOT.dbcalf = { ...MOT.calf, props: [{ k: 'db', j: 'handN' }], P: [{}, { ft: 40, ftF: 40 }] };
+Object.values(MOT).forEach(m => { m.P = m.P.map(x => ({ ...BASEP, ...x })); });
+const MOTMAP = {
+  chair_squat: 'chairsquat', wall_sit: 'wallsit', bw_squat: 'squat', goblet_squat: 'goblet', bb_squat: 'bbsquat', jump_squat: 'jumpsquat', pistol_box: 'pistol',
+  glute_bridge: 'bridge', single_bridge: 'bridge1', superman: 'superman', db_rdl: 'rdl', kb_swing: 'swing', bb_dl: 'deadlift', hip_thrust: 'thrust',
+  split_squat: 'split', reverse_lunge: 'revlunge', step_up: 'stepup', db_lunge: 'dblunge', bulgarian: 'bulgarian', clamshell: 'clam', band_walk: 'sidewalk',
+  wall_pushup: 'wallpush', incline_pushup: 'inclinepush', knee_pushup: 'kneepush', pushup: 'pushup', decline_pushup: 'declinepush', db_floor: 'floorpress',
+  db_bench: 'benchpress', band_press: 'bandpress', bb_bench: 'bbbench', pike_pushup: 'pike', db_press: 'ohp', band_ohp: 'bandohp', db_lateral: 'lateral',
+  pullup: 'pullup', neg_pullup: 'negpull', dead_hang: 'hang', band_pulldown: 'pulldown', db_row: 'dbrow', band_row: 'bandrow', bb_row: 'bbrow', db_rear: 'rearfly',
+  prone_w: 'wraise', y_raise: 'yraise', band_pa: 'pullapart', db_curl: 'curl', band_curl: 'bandcurl', db_ext: 'french', band_kick: 'kickback', bench_dip: 'dip',
+  diamond: 'pushup', dead_bug: 'deadbug', plank: 'plank', bird_dog: 'birddog', crunch: 'crunch', side_plank: 'sideplank', leg_raise: 'legraise', ab_roll: 'abroll',
+  hang_knee: 'hangknee', calf_raise: 'calf', db_calf: 'dbcalf', step_jack: 'stepjack', high_knee: 'highknee', jumping_jack: 'jack', mountain: 'mountain', rope: 'rope', burpee: 'burpee'
+};
+
+const vec = (a, l) => [Math.sin(a * Math.PI / 180) * l, Math.cos(a * Math.PI / 180) * l];
+const addv = (p, a, l) => { const d = vec(a, l); return [p[0] + d[0], p[1] + d[1]]; };
+function ik(A, T, l1, l2, bend) {
+  const dx = T[0] - A[0], dy = T[1] - A[1], d0 = Math.hypot(dx, dy) || .001;
+  const d = clamp(d0, Math.abs(l1 - l2) + .01, l1 + l2 - .01);
+  const a = Math.atan2(dy, dx) + bend * Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+  return [[A[0] + Math.cos(a) * l1, A[1] + Math.sin(a) * l1], [A[0] + dx / d0 * d, A[1] + dy / d0 * d]];
+}
+function solve(m, P) {
+  const fr = m.v === 'f', mir = a => fr ? -a : a, J = {};
+  J.hip = [0, 0]; J.sh = addv(J.hip, P.t, SEG.t); J.head = addv(J.sh, P.t, 15);
+  const sx = fr ? 13 : 0, hx = fr ? 7 : 0;
+  J.shN = [J.sh[0] + sx, J.sh[1]]; J.shF = [J.sh[0] - sx, J.sh[1]]; J.back = [J.sh[0] - 10, J.sh[1] + 6];
+  J.hipN = [hx, 0]; J.hipF = [-hx, 0];
+  J.kneeN = addv(J.hipN, P.thN, SEG.th); J.ankN = addv(J.kneeN, P.snN, SEG.sn); J.toeN = addv(J.ankN, P.ft, SEG.ft);
+  J.kneeF = addv(J.hipF, mir(P.thF), SEG.th); J.ankF = addv(J.kneeF, mir(P.snF), SEG.sn); J.toeF = addv(J.ankF, mir(P.ftF), SEG.ft);
+  J.elbN = addv(J.shN, P.uaN, SEG.ua); J.handN = addv(J.elbN, P.faN, SEG.fa);
+  J.elbF = addv(J.shF, mir(P.uaF), SEG.ua); J.handF = addv(J.elbF, mir(P.faF), SEG.fa);
+  const an = J[m.an], ox = (P.ax ?? m.at[0]) - an[0], oy = (P.ay ?? m.at[1]) - an[1] + P.jy;
+  for (const k in J) J[k] = [J[k][0] + ox, J[k][1] + oy];
+  if (P.hN) [J.elbN, J.handN] = ik(J.shN, P.hN, SEG.ua, SEG.fa, 1);
+  if (P.hF) [J.elbF, J.handF] = ik(J.shF, P.hF, SEG.ua, SEG.fa, 1);
+  return J;
+}
+function lerpP(A, B, f) {
+  const o = {};
+  for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) {
+    const a = A[k], b = B[k];
+    if (Array.isArray(a) && Array.isArray(b)) o[k] = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+    else if (typeof a === 'number' && typeof b === 'number') o[k] = a + (b - a) * f;
+    else o[k] = f < .5 ? a : b;
+  }
+  return o;
+}
+const DYN = new Set(['db', 'bar', 'kb', 'roller', 'band', 'rope']);
+function propStatic(p) {
+  if (p.k === 'chair') { const bx = p.back === 'right' ? p.x + p.w - 2 : p.x + 2; return `<path class="prl" d="M${p.x + 4} ${p.y + 4} V173 M${p.x + p.w - 4} ${p.y + 4} V173${p.back ? ` M${bx} ${p.y} V${p.y - 38}` : ''}"/><rect class="pr" x="${p.x}" y="${p.y}" width="${p.w}" height="6" rx="2"/>`; }
+  if (p.k === 'bench') return `<path class="prl" d="M${p.x + 8} ${p.y + 8} V173 M${p.x + p.w - 8} ${p.y + 8} V173"/><rect class="pr" x="${p.x}" y="${p.y}" width="${p.w}" height="8" rx="3"/>`;
+  if (p.k === 'box') return `<rect class="pr" x="${p.x}" y="${p.y}" width="${p.w}" height="${173 - p.y}" rx="3"/>`;
+  if (p.k === 'wall') return `<rect class="pr" x="${p.x}" y="10" width="8" height="163"/>`;
+  if (p.k === 'pbar') return `<path class="prl" d="M${p.x - 40} ${p.y} H${p.x + 40}" style="stroke-width:5"/>`;
+  if (p.k === 'door') return `<rect class="pr" x="${p.x - 5}" y="${p.y - 5}" width="10" height="10" rx="2"/>`;
+  return '';
+}
+function propDyn(p, J) {
+  const [x, y] = J[p.j || p.a] || [0, 0];
+  if (p.k === 'db') return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${p.v ? 90 : 0})"><rect class="pw" x="-9" y="-2.5" width="18" height="5" rx="2"/><rect class="pw" x="-13" y="-6.5" width="6" height="13" rx="2"/><rect class="pw" x="7" y="-6.5" width="6" height="13" rx="2"/></g>`;
+  if (p.k === 'bar') return `<circle class="pw" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${p.r || 17}"/><circle class="pr" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"/>`;
+  if (p.k === 'kb') return `<path class="pwl" d="M${(x - 5).toFixed(1)} ${(y + 4).toFixed(1)} Q${x.toFixed(1)} ${(y - 5).toFixed(1)} ${(x + 5).toFixed(1)} ${(y + 4).toFixed(1)}"/><circle class="pw" cx="${x.toFixed(1)}" cy="${(y + 10).toFixed(1)}" r="8"/>`;
+  if (p.k === 'roller') return `<circle class="pw" cx="${x.toFixed(1)}" cy="${(y + 2).toFixed(1)}" r="8"/>`;
+  if (p.k === 'band') { const b = typeof p.b === 'string' ? J[p.b] : p.b; return `<path class="pb" d="M${x.toFixed(1)} ${y.toFixed(1)} L${b[0].toFixed(1)} ${b[1].toFixed(1)}"/>`; }
+  if (p.k === 'rope') return `<path class="pb" d="M${J.handN[0].toFixed(1)} ${J.handN[1].toFixed(1)} Q${(J.toeN[0] + 18).toFixed(1)} ${(J.toeN[1] + 16).toFixed(1)} ${(J.handF[0] - 2).toFixed(1)} ${J.handF[1].toFixed(1)}"/>`;
+  return '';
+}
+function figSVG(m) {
+  const g = m.rot ? ` transform="rotate(${m.rot} ${m.at[0]} ${m.at[1]})"` : '';
+  return `<svg class="fig ${m.v === 'f' ? 'front' : ''}" viewBox="0 0 240 180" role="img" aria-label="お手本の動き">
+    <line class="floor" x1="0" y1="173.5" x2="240" y2="173.5"/>${(m.props || []).filter(p => !DYN.has(p.k)).map(propStatic).join('')}
+    <g${g}><polyline class="lf legF"/><polyline class="lf armF"/><line class="torso"/><circle class="head" r="10"/><polyline class="ln legN"/><polyline class="ln armN"/></g>
+    <g class="dprops"${g}></g></svg>`;
+}
+function drawFig(el, m, P) {
+  const J = solve(m, P), q = el._q || (el._q = { legF: el.querySelector('.legF'), armF: el.querySelector('.armF'), legN: el.querySelector('.legN'), armN: el.querySelector('.armN'), torso: el.querySelector('.torso'), head: el.querySelector('.head'), dp: el.querySelector('.dprops') });
+  const pts = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  q.legF.setAttribute('points', pts([J.hipF, J.kneeF, J.ankF, J.toeF])); q.armF.setAttribute('points', pts([J.shF, J.elbF, J.handF]));
+  q.legN.setAttribute('points', pts([J.hipN, J.kneeN, J.ankN, J.toeN])); q.armN.setAttribute('points', pts([J.shN, J.elbN, J.handN]));
+  q.torso.setAttribute('x1', J.hip[0].toFixed(1)); q.torso.setAttribute('y1', J.hip[1].toFixed(1)); q.torso.setAttribute('x2', J.sh[0].toFixed(1)); q.torso.setAttribute('y2', J.sh[1].toFixed(1));
+  q.head.setAttribute('cx', J.head[0].toFixed(1)); q.head.setAttribute('cy', J.head[1].toFixed(1));
+  const dyn = (m.props || []).filter(p => DYN.has(p.k));
+  if (dyn.length) q.dp.innerHTML = dyn.map(p => propDyn(p, J)).join('');
+}
+function demoHTML(e, it) {
+  const id = MOTMAP[e.id]; if (!id) return '';
+  const m = MOT[id], target = it && !it.secT ? it.hiT : 0;
+  const tempo = m.ph.filter(p => p[2]).map(p => `${p[2]}${p[3] === 'k' ? '' : ` ${+p[1].toFixed(1)}秒`}`).join(' → ');
+  return `<section class="demo card" data-mot="${id}" data-ex="${e.id}" data-target="${target}">
+    <div class="figwrap">${figSVG(m)}<div class="dcd" hidden></div></div>
+    <div class="dphase"><b class="dlabel">&nbsp;</b><span class="dsec num"></span></div>
+    <div class="dstrip">${m.ph.map(p => `<i style="flex:${p[1]}"><b></b></i>`).join('')}</div>
+    <p class="small muted">リズム：${tempo}${e.side ? '（左右それぞれ）' : ''}</p>
+    <div class="dctl">${target ? `<button class="btn primary sm" data-act="pace">いっしょにやる（${target}回）</button>` : ''}
+      ${RM ? '<button class="btn ghost sm" data-act="dplay">お手本を動かす</button>' : ''}<button class="btn ghost sm" data-act="dsound" aria-pressed="${DM.sound}">${DM.sound ? '音声ガイド ON' : '音声ガイド OFF'}</button><span class="drep num"></span></div>
+    <ul class="dpts">${m.pts.map(x => `<li>${x}</li>`).join('')}<li class="ng">NG：${m.ng}</li></ul>
+  </section>`;
+}
+const RM = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+const DM = { key: null, start: 0, mode: 'demo', target: 0, sound: !!S.demoSound, phk: -1, cd: -1, play: !RM };
+function speak(t) { if (!DM.sound || !t) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'ja-JP'; u.rate = 1.15; speechSynthesis.speak(u); } catch (e) { } }
+function setTxt(n, t) { if (n && n.textContent !== t) n.textContent = t; }
+function demoLoop(now) {
+  requestAnimationFrame(demoLoop);
+  const el = document.querySelector('.demo[data-mot]'); if (!el) return;
+  const m = MOT[el.dataset.mot], C = m.ph.reduce((a, p) => a + p[1], 0);
+  if (DM.key !== el.dataset.ex) { DM.key = el.dataset.ex; DM.start = now; DM.mode = 'demo'; }
+  let t = 0, label = '', rep = '', cd = 0;
+  if (DM.mode === 'pace') {
+    const e = (now - DM.start) / 1000 - 3;
+    if (e < 0) { cd = Math.ceil(-e); label = 'よーい'; }
+    else {
+      const r = Math.floor(e / C) + 1;
+      if (r > DM.target) { DM.mode = 'fin'; if (DM.sound) beep(990, .3); speak('おわり。チェックを押してね'); }
+      else { t = e % C; rep = `${r} / ${DM.target}回`; }
+    }
+    if (cd && cd !== DM.cd) { DM.cd = cd; if (DM.sound) beep(660, .08); }
+  } else if (DM.mode === 'demo') t = DM.play ? ((now - DM.start) / 1000) % C : 0;
+  let acc = 0, i = 0;
+  for (; i < m.ph.length - 1 && t >= acc + m.ph[i][1]; i++) acc += m.ph[i][1];
+  const p = m.ph[i], f = clamp((t - acc) / p[1], 0, 1), from = m.P[m.ph[(i - 1 + m.ph.length) % m.ph.length][0]], to = m.P[p[0]];
+  drawFig(el, m, lerpP(from, to, f * f * (3 - 2 * f)));
+  const q = el._u || (el._u = { lbl: el.querySelector('.dlabel'), sec: el.querySelector('.dsec'), rep: el.querySelector('.drep'), cd: el.querySelector('.dcd'), segs: [...el.querySelectorAll('.dstrip b')], btn: el.querySelector('[data-act="pace"]') });
+  const active = DM.mode === 'pace' && !cd, fin = DM.mode === 'fin';
+  if (fin) { label = '目標回数まで できた！'; rep = `${DM.target} / ${DM.target}回`; }
+  else if (!cd) label = p[2] || (m.ph[(i - 1 + m.ph.length) % m.ph.length][2] || '');
+  const still = DM.mode === 'demo' && !DM.play;
+  if (still) label = '「お手本を動かす」で再生';
+  setTxt(q.lbl, label || ' ');
+  setTxt(q.sec, !still && !cd && !fin && p[2] && p[1] >= 1 ? `${Math.ceil(p[1] * (1 - f))}` : '');
+  setTxt(q.rep, rep);
+  q.cd.hidden = !cd; if (cd) setTxt(q.cd, String(cd));
+  q.segs.forEach((b, k) => { const w = fin || still ? 0 : k < i ? 100 : k === i ? f * 100 : 0; b.style.width = w.toFixed(0) + '%'; });
+  if (q.btn) setTxt(q.btn, DM.mode === 'pace' ? 'やめる' : fin ? 'もう一度いっしょにやる' : `いっしょにやる（${el.dataset.target}回）`);
+  if (active) {
+    const r = Math.floor(((now - DM.start) / 1000 - 3) / C) + 1, k = r * 100 + i;
+    if (k !== DM.phk) {
+      DM.phk = k;
+      if (DM.sound) beep(i === 0 ? 880 : 620, .07);
+      if (i === 0 && r > 1) speak(String(r - 1)); else if (p[2] && p[1] >= .8) speak(p[2]);
+    }
+  }
+}
+requestAnimationFrame(demoLoop);
+
+/* ========= views ========= */
+function vTabs() {
+  const t = [['home', 'ホーム'], ['status', 'ステータス'], ['plan', 'メニュー'], ['log', '記録'], ['settings', '設定']];
+  return `<div class="tabs"><nav>${t.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${view === k || (k === 'status' && view === 'equip') ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24">${ICON[k]}</svg>${l}</button>`).join('')}</nav></div>`;
+}
+
+function vHome() {
+  const p = S.profile;
+  if (!homeMsg) pickHomeMsg();
+  const L = bondLv(S.xp), lo = BOND[L - 1][0], hi = BOND[L] ? BOND[L][0] : null;
+  const pct = hi ? Math.round((S.xp - lo) / (hi - lo) * 100) : 100, pl = player();
+  const ws = weekStart(new Date()), set = new Set(S.history.map(h => ymd(h.ts))), today = ymd(Date.now());
+  const cells = [...Array(7)].map((_, i) => { const d = new Date(ws); d.setDate(d.getDate() + i); const k = ymd(d); return `<li class="${k === today ? 'today' : ''}"><span class="stamp ${set.has(k) ? 'on' : ''}">${set.has(k) ? PAW : ''}</span>${WD[d.getDay()]}</li>`; }).join('');
+  const di = nextDayIdx(), day = S.program.days[di], est = dayEst(day, p), sk = streak(), wc = weekCount();
+  const now = new Date();
+  let todayCard;
+  if (S.session) {
+    todayCard = `<section class="card today"><div class="eyebrow">トレーニング中</div><h2>${esc(S.session.label)}</h2><p class="muted small">途中から再開できます。</p><button class="btn primary" data-act="resume">続きから再開</button></section>`;
+  } else {
+    todayCard = `<section class="card today">
+      <div class="rowb"><span class="eyebrow">次のメニュー · DAY ${di + 1}/${S.program.days.length}</span>${trainedToday() ? '<span class="pill ok">今日は達成ずみ</span>' : ''}</div>
+      <h2>${day.label}</h2>
+      <p class="muted small"><span class="num">約${est}分</span> · ${day.items.length}種目 · 消費の目安 <span class="num">${kcalOf(est)}</span>kcal</p>
+      <ul class="exlist">${day.items.map(it => `<li><span>${EXM[it.id].n}</span><span>${rxText(it)}</span></li>`).join('')}</ul>
+      <button class="btn primary" data-act="start">${trainedToday() ? 'もう1回やる' : 'はじめる'}</button>
+      <button class="btn soft" data-act="mini">気分がのらない日は「5分だけ」</button>
+    </section>`;
+  }
+  return `<main class="screen">
+    <header class="top"><div class="logo">${PAW.replace('<svg', '<svg style="fill:var(--paw)"')}ねこトレ</div><span class="muted small">${now.getMonth() + 1}月${now.getDate()}日（${WD[now.getDay()]}）</span></header>
+    <section class="stage">
+      <button class="catbtn" data-act="pet" aria-label="${esc(p.cat.name)}をなでる">${myCat(homeMood)}<span class="hearts"></span></button>
+      <div class="bubble"><b>${esc(p.cat.name)}</b><p id="homeMsg">${homeMsg}</p></div>
+    </section>
+    <div class="lvrows">
+      <button class="lvrow" data-act="tab" data-v="status" aria-label="ステータスを見る"><span class="lvtag">Lv ${pl.lv.L}</span><span class="lvname"><b>${pname()}</b> <span class="muted">${titleOf(pl.lv.L)}</span></span><span class="muted num">あと${pl.lv.need - pl.lv.cur}</span><span class="meter"><i style="width:${Math.round(pl.lv.cur / pl.lv.need * 100)}%"></i></span></button>
+      <button class="lvrow cat" data-act="tab" data-v="status" aria-label="ステータスを見る"><span class="lvtag">Lv ${L}</span><span class="lvname"><b>${esc(p.cat.name)}</b> <span class="muted">${BOND[L - 1][1]}</span></span><span class="muted num">${hi ? `あと${hi - S.xp}` : 'MAX'}</span><span class="meter"><i style="width:${pct}%"></i></span></button>
+    </div>
+    <section class="card stamps">
+      <div class="rowb"><h2>今週のスタンプ</h2><span class="small"><b class="num">${wc}</b>/<span class="num">${p.days}</span>回${sk ? ` · <b class="num">${sk}</b>週連続達成` : ''}</span></div>
+      <ol class="week">${cells}</ol>
+    </section>
+    ${todayCard}
+    <p class="note">猫をタップするとなでられます（1日1回なかよし度アップ）。</p>
+  </main>`;
+}
+
+function vStatus() {
+  const p = S.profile, pl = player(), L = bondLv(S.xp), lo = BOND[L - 1][0], hi = BOND[L] ? BOND[L][0] : null;
+  const nextAcc = GEAR.filter(g => g.bond > L).sort((x, y) => x.bond - y.bond)[0], cp = catPower(), nextTitle = TITLES.find(t => t[0] > pl.lv.L);
+  const ach = achievements(), got = ach.filter(a => a[2]).length;
+  return `<main class="screen">
+    <header><h1>ステータス</h1></header>
+    <section class="rpg">
+      <div class="rowb"><span class="big">${pname()}</span><span class="big">Lv ${pl.lv.L}</span></div>
+      <div class="rowb dim"><span>${titleOf(pl.lv.L)}</span><span>${pl.type}</span></div>
+      <div class="bar"><i style="width:${Math.round(pl.lv.cur / pl.lv.need * 100)}%"></i></div>
+      <div class="rowb dim small"><span>けいけんち ${pl.exp}</span><span>つぎのレベルまで ${pl.lv.need - pl.lv.cur}</span></div>
+      <hr>
+      ${STATS.map(([k, l, sub]) => { const x = pl.st[k]; return `<div class="srow"><span>${l}<small>${sub}</small></span><span>${x.L}</span><div class="bar"><i style="width:${Math.round(x.cur / x.need * 100)}%"></i></div></div>`; }).join('')}
+      ${nextTitle ? `<hr><p class="dim small">Lv ${nextTitle[0]}で称号「${nextTitle[1]}」</p>` : ''}
+    </section>
+    <p class="note">ちから＝上半身の種目、ふんばり＝下半身、バランス＝体幹・姿勢、スタミナ＝有酸素とトレーニング時間で育ちます。いちばん育った能力でタイプが決まります。</p>
+    <section class="rpg catwin">
+      <div class="cwrap">${myCat('happy')}<div>
+        <div class="rowb"><span class="big">${esc(p.cat.name)}</span><span>Lv ${L}</span></div>
+        <p class="dim">${BOND[L - 1][1]}</p>
+      </div></div>
+      <div class="bar"><i style="width:${hi ? Math.round((S.xp - lo) / (hi - lo) * 100) : 100}%"></i></div>
+      <p class="small dim">${hi ? `つぎのレベルまで ${hi - S.xp}` : 'レベルMAX'}</p>
+      <hr>
+      <div class="rowb"><span>こうげき ${cp.a}</span><span>しゅび ${cp.d}</span></div>
+      <p class="dim small">そうび：${Object.values(S.equip).map(id => GEARM[id].n).join('・') || 'なし'}</p>
+      <p>とくぎ「はげまし」：けいけんち +${catBonus()}%</p>
+      <p class="dim small">※ たたかいには 参加しません${nextAcc ? `<br>なかよしLv ${nextAcc.bond}で「${nextAcc.n}」をもらえる` : ''}</p>
+      <button class="btn soft sm" style="width:100%" data-act="tab" data-v="equip">そうびを変える</button>
+    </section>
+    <p class="note">${esc(p.cat.name)}のレベルは、いっしょにトレーニングしたり、なでたりすると上がります。レベルが1上がるごとに、あなたが受け取る経験値が5%増えます。そうびで強くなりますが、たたかうのはあなただけです。</p>
+    <section style="display:flex;flex-direction:column;gap:10px"><div class="rowb"><h2>実績</h2><span class="small muted num">${got} / ${ach.length}</span></div>
+      <ul class="ach">${ach.map(a => `<li class="${a[2] ? 'on' : ''}"><b>${a[2] ? a[0] : '？？？'}</b><span>${a[1]}</span></li>`).join('')}</ul>
+    </section>
+  </main>`;
+}
+function vEquip() {
+  const p = S.profile, cp = catPower();
+  return `<main class="screen">
+    <header><div class="eyebrow">${esc(p.cat.name)}の</div><h1>そうび</h1></header>
+    <section class="rpg catwin">
+      <div class="eqcat">${myCat('happy')}</div>
+      <div class="rowb"><span>こうげき ${cp.a}</span><span>しゅび ${cp.d}</span></div>
+      <p class="dim small">どれだけ強くなっても、${esc(p.cat.name)}は たたかいには 参加しません。</p>
+    </section>
+    ${SLOTS.map(([k, l]) => `<section class="day"><div class="rowb"><h2>${l}</h2>${S.equip[k] ? `<button class="link" data-act="unequip" data-v="${k}">はずす</button>` : ''}</div><div class="gear">${GEAR.filter(g => g.slot === k).map(g => {
+      const on = S.equip[k] === g.id, stat = [g.a ? `こう+${g.a}` : '', g.d ? `しゅ+${g.d}` : ''].filter(Boolean).join(' ');
+      return S.items.includes(g.id)
+        ? `<button class="chip gearchip" data-act="equip" data-v="${g.id}" aria-pressed="${on}"><span>${g.n}</span><small>${stars(g.r)} ${stat}</small></button>`
+        : `<div class="chip gearchip locked"><span>？？？</span><small>${stars(g.r)}${g.bond ? ` なかよしLv${g.bond}` : ''}</small></div>`;
+    }).join('')}</div></section>`).join('')}
+    <p class="note">そうびは モンスターを たおすと 手に入ります。5回に1回 ボスが あらわれ、めずらしい そうびを おとします。</p>
+    <button class="btn ghost" data-act="tab" data-v="status">ステータスにもどる</button>
+  </main>`;
+}
+function battleHTML(s) {
+  const b = s.battle, cat = esc(S.profile.cat.name), hit = Date.now() - b.hit < 900;
+  return `<section class="battle">
+    <div class="bfield"><div class="mon ${b.m.boss ? 'boss' : ''} ${b.won ? 'down' : ''} ${hit ? 'hit' : ''}">${monSVG(b.m)}${hit ? `<span class="dmg">${b.last}</span>` : ''}</div>
+      <div class="watcher">${myCat('normal')}<span>みてるだけ</span></div></div>
+    <div class="mhp"><span>${b.m.boss ? '<span class="bosstag">BOSS</span>' : ''}${b.m.n}</span><span class="num">HP ${b.hp} / ${b.max}</span><div class="bar"><i style="width:${Math.round(b.hp / b.max * 100)}%"></i></div></div>
+    <div class="rpg small"><p>${b.msg}</p><p class="dim">${cat}は ${b.idle}。</p>${sessMsg ? `<p class="dim">${cat}「${sessMsg}」</p>` : ''}</div>
+  </section>`;
+}
+function howHTML(e) {
+  return `<ol>${e.how.map(h => `<li>${h}</li>`).join('')}</ol><p class="cue"><b>${esc(S.profile.cat.name)}メモ：</b>${e.cue}</p>`;
+}
+function vPlan() {
+  const p = S.profile, di = nextDayIdx();
+  return `<main class="screen">
+    <header><div class="eyebrow">あなた専用</div><h1>トレーニングプログラム</h1></header>
+    <section class="card why"><h2>このメニューにした理由</h2><ul>${S.program.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></section>
+    ${S.program.days.map((d, i) => `<section class="day">
+      <div class="dayhead"><span class="dnum">DAY ${i + 1}</span><h2>${d.label}</h2><span class="muted small num">約${dayEst(d, p)}分</span>${i === di ? '<span class="pill paw">次はこれ</span>' : ''}</div>
+      <ol class="plist">${d.items.map((it, j) => { const e = EXM[it.id], k = `${i}-${j}`, open = openHow === k; return `<li>
+        <button class="prow" data-act="how" data-v="${k}" aria-expanded="${open}"><span class="pn">${e.n}<br><span class="muted small" style="font-weight:400">${PL[e.p]}</span></span><span class="ps">${rxText(it)}</span></button>
+        ${open ? `<div class="howbox">${demoHTML(e, null)}${howHTML(e)}<div class="rowbtns"><button class="btn ghost sm" data-act="swapPlan" data-v="${k}">別の種目に替える</button></div></div>` : ''}</li>`; }).join('')}</ol>
+    </section>`).join('')}
+    <button class="btn ghost" data-act="editProfile">条件を変えて作り直す</button>
+    <p class="note">同じメニューをくり返し、回数や重さを少しずつ増やすのが上達の近道です。目標回数を全セットでこなすと、次回の目標が自動で上がります。</p>
+  </main>`;
+}
+
+function vSession() {
+  const s = S.session, p = S.profile, n = s.items.length;
+  const bar = `<div class="sbar"><button class="iconbtn" data-act="quit">終了</button><div class="ttl">${esc(s.label)}</div><span class="iconbtn num" id="elapsed" style="display:grid;place-items:center">0:00</span></div>
+    <div class="prog">${s.items.map((it, i) => `<i class="${i === s.cur ? 'cur' : it.log.every(l => l.done) ? 'done' : ''}"></i>`).join('')}</div>`;
+  const coach = s.battle ? battleHTML(s) : `<div class="coach">${myCat(s.cur < 0 ? 'normal' : p.cat.per === 'hot' ? 'fire' : 'normal')}<div class="bubble"><b>${esc(p.cat.name)}</b><p>${sessMsg || say('start')}</p></div></div>`;
+  if (s.cur < 0) {
+    return `${bar}<main class="sess">${coach}
+      <section class="ex"><div class="eyebrow">ウォームアップ · 約3分</div><h2>体をあたためよう</h2></section>
+      <ul class="warm">${WARMUP.map(w => `<li><span>${w[0]}</span><span class="muted num">${w[1]}</span></li>`).join('')}</ul>
+      <p class="note">体があたたまるとケガをしにくく、力も出やすくなります。</p></main>
+      <div class="sfoot"><div><button class="btn ghost" data-act="go" data-v="0">スキップ</button><button class="btn primary" data-act="go" data-v="0">準備できた</button></div></div>`;
+  }
+  const it = s.items[s.cur], e = EXM[it.id], last = lastLog(it.id);
+  const amt = it.secT ? `${it.secT}秒` : `${it.loT}〜${it.hiT}回`;
+  const allDone = it.log.every(l => l.done);
+  const rows = it.log.map((l, j) => `<div class="set ${l.done ? 'done' : ''}"><span class="no">${j + 1}</span>
+    <div class="vals">${e.w ? `<input type="number" inputmode="decimal" step="0.5" min="0" id="w-${s.cur}-${j}" data-log="${j}-w" value="${esc(l.w)}" aria-label="${j + 1}セット目の重さ"><span>kg ×</span>` : ''}
+    <input type="number" inputmode="numeric" min="0" id="r-${s.cur}-${j}" data-log="${j}-r" value="${esc(l.r)}" aria-label="${j + 1}セット目の${it.secT ? '秒数' : '回数'}"><span>${it.secT ? '秒' : '回'}</span></div>
+    <div class="acts">${it.secT && !l.done ? `<button class="play" data-act="work" data-v="${j}" aria-label="タイマー開始">${PLAY}</button>` : ''}<button class="chk" data-act="done" data-v="${j}" aria-label="${j + 1}セット目を完了">${CHECK}</button></div></div>`).join('');
+  const isLast = s.cur === n - 1;
+  return `${bar}<main class="sess">${coach}
+    <section class="ex" style="display:flex;flex-direction:column;gap:6px">
+      <div class="eyebrow">${s.cur + 1} / ${n} · ${PL[e.p]}</div>
+      <h2>${e.n}</h2>
+      <p class="target">${it.sets}セット × ${amt}${e.side ? '（左右それぞれ）' : ''} · 休憩${it.rest}秒</p>
+      ${last ? `<p class="prev">前回：${last}</p>` : ''}
+    </section>
+    ${demoHTML(e, it)}
+    <details class="card" style="gap:8px"><summary style="font-weight:700;cursor:pointer">手順とコツを読む</summary><div class="howbox" style="padding:8px 0 0">${howHTML(e)}</div></details>
+    <div class="sets">${rows}</div>
+    <p class="note">${it.secT ? '▶でカウントダウン開始。' : '「いっしょにやる」でお手本のリズムに合わせて動けます。できた回数に書きかえてから✓を押してください。'}全セットで目標の上限に届くと、次回の目標が上がります。</p>
+    <div class="rowbtns"><button class="btn ghost sm" data-act="swapSess">別の種目に替える</button></div>
+  </main>
+  <div class="sfoot"><div><button class="btn ghost" data-act="go" data-v="${Math.max(0, s.cur - 1)}" ${s.cur === 0 ? 'disabled' : ''}>戻る</button>${isLast
+      ? '<button class="btn primary" data-act="finish">トレーニング完了</button>'
+      : `<button class="btn primary" data-act="go" data-v="${s.cur + 1}">${allDone ? '次の種目へ' : 'とばして次へ'}</button>`}</div></div>`;
+}
+function lastLog(id) {
+  for (let i = S.history.length - 1; i >= 0; i--) {
+    const x = S.history[i].items.find(y => y.id === id);
+    if (x) { const e = EXM[id], w = Math.max(...x.sets.map(s => s.w || 0)); return x.sets.map(s => s.r).join('・') + (EXM[id].unit === 'sec' ? '秒' : '回') + (e.w && w ? ` ＠ ${w}kg` : ''); }
+  }
+  return '';
+}
+
+function vResult() {
+  const r = S.lastResult, h = S.history[r.idx], p = S.profile;
+  const m = Math.max(1, Math.round(h.dur / 60));
+  const reps = h.items.reduce((a, it) => a + it.sets.reduce((b, s) => b + (EXM[it.id].unit === 'sec' ? 0 : s.r), 0), 0);
+  return `<main class="screen res">
+    <div class="eyebrow">${esc(h.label)}</div>
+    ${myCat('happy')}
+    <div class="bubble" style="text-align:left"><b>${esc(p.cat.name)}</b><p>${rpeMsg || r.msg}</p></div>
+    <div class="stats"><div class="stat"><b>${m}</b><span>分</span></div><div class="stat"><b>${h.kcal}</b><span>kcal（目安）</span></div><div class="stat"><b>${h.vol > 0 ? Math.round(h.vol) : reps}</b><span>${h.vol > 0 ? '総挙上量 kg' : '合計回数'}</span></div></div>
+    ${rpgWin(r)}
+    <p class="small"><b>${esc(p.cat.name)}のなかよし度 +${r.xp}</b>${r.up ? ` · <span class="pill paw">Lv.${bondLv(S.xp)}「${BOND[bondLv(S.xp) - 1][1]}」になった！</span>` : ''}${r.unlock ? `<br>なかよしのしるしに「${r.unlock}」をもらいました（ステータス → そうび）` : ''}</p>
+    ${r.notes.length ? `<section style="display:flex;flex-direction:column;gap:8px;text-align:left"><h2>次回に向けて</h2><ul class="notes">${r.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></section>` : ''}
+    <section class="card" style="text-align:left"><h2>今日のきつさは？</h2><p class="muted small">次回の量の調整に使います。</p>
+      <div class="rpe">${[['hard', 'きつかった'], ['ok', 'ちょうどいい'], ['easy', '余裕']].map(([k, l]) => `<button class="chip" data-act="rpe" data-v="${k}" aria-pressed="${h.rpe === k}">${l}</button>`).join('')}</div></section>
+    <button class="btn primary" data-act="tab" data-v="home">ホームへ</button>
+  </main>`;
+}
+
+function rpgWin(r) {
+  const g = r.rpg; if (!g) return '';
+  let d = 0; const D = () => `style="animation-delay:${(d++ * .18).toFixed(2)}s"`;
+  const cat = esc(S.profile.cat.name);
+  return `<section class="rpg">
+    ${g.mon ? (g.won ? `<p class="ln" ${D()}>${g.mon}を たおした！</p>` : `<p class="ln dim" ${D()}>${g.mon}は にげていった…</p>`) : ''}
+    ${g.drop ? `<p class="ln lvup" ${D()}>${g.mon}は ${GEARM[g.drop].n}（${'★'.repeat(GEARM[g.drop].r)}）を おとした！<br>${cat}が ひろった。</p>` : ''}
+    <p class="ln" ${D()}>${pname()}は けいけんち ${g.gain} を かくとく！</p>
+    <ul class="explines">${g.lines.map(l => `<li class="ln" ${D()}><span>${l[0]}</span><span>+${l[1]}</span></li>`).join('')}</ul>
+    ${g.L1 > g.L0 ? `<p class="ln lvup" ${D()}>${pname()}は レベル ${g.L1} に あがった！</p>` : ''}
+    ${g.title ? `<p class="ln" ${D()}>称号「${g.title}」を 手に入れた！</p>` : ''}
+    ${g.ups.map(u => `<p class="ln" ${D()}>${u[0]}が ${u[2] - u[1]} あがった！</p>`).join('')}
+    ${g.ach.map(a => `<p class="ln" ${D()}>実績「${a}」を 達成した！</p>`).join('')}
+    <div class="bar ln" ${D()}><i style="width:${g.pct}%"></i></div>
+    <p class="dim small">Lv ${g.L1} · つぎのレベルまで ${g.left}</p>
+  </section>${g.drop && S.equip[GEARM[g.drop].slot] !== g.drop ? `<button class="btn soft" data-act="equip" data-v="${g.drop}">${GEARM[g.drop].n}を ${cat}に そうびさせる</button>` : ''}`;
+}
+function vLog() {
+  const p = S.profile, base = new Date(); base.setDate(1); base.setMonth(base.getMonth() + calOff);
+  const y = base.getFullYear(), mo = base.getMonth(), first = (new Date(y, mo, 1).getDay() + 6) % 7, nd = new Date(y, mo + 1, 0).getDate();
+  const cnt = {}; S.history.forEach(h => { const k = ymd(h.ts); cnt[k] = (cnt[k] || 0) + 1; });
+  const today = ymd(Date.now());
+  let cal = ['月', '火', '水', '木', '金', '土', '日'].map(w => `<span class="wd">${w}</span>`).join('') + '<span></span>'.repeat(first);
+  for (let d = 1; d <= nd; d++) { const k = `${y}-${pad(mo + 1)}-${pad(d)}`; cal += `<span class="d ${cnt[k] ? 'on' : ''} ${k === today ? 'today' : ''}">${cnt[k] ? PAW + `<span>${d}</span>` : d}</span>`; }
+  const monthN = S.history.filter(h => { const d = new Date(h.ts); return d.getFullYear() === y && d.getMonth() === mo; }).length;
+  const totalMin = Math.round(S.history.reduce((a, h) => a + h.dur, 0) / 60);
+  const recent = S.history.slice(-8).reverse();
+  return `<main class="screen">
+    <header><h1>記録</h1></header>
+    <div class="stats"><div class="stat"><b>${S.history.length}</b><span>合計回数</span></div><div class="stat"><b>${totalMin}</b><span>合計 分</span></div><div class="stat"><b>${streak()}</b><span>週連続達成</span></div></div>
+    <section class="card">
+      <div class="rowb"><button class="iconbtn" data-act="cal" data-v="-1" aria-label="前の月">‹</button><h2>${y}年${mo + 1}月 <span class="small muted">${monthN}回</span></h2><button class="iconbtn" data-act="cal" data-v="1" aria-label="次の月" ${calOff >= 0 ? 'disabled' : ''}>›</button></div>
+      <div class="cal">${cal}</div>
+    </section>
+    <section class="card">
+      <h2>体重</h2>
+      ${sparkline()}
+      <div class="inrow"><div class="unit"><input class="inp" type="number" inputmode="decimal" step="0.1" id="wIn" placeholder="${p.weight}" aria-label="今日の体重"><span>kg</span></div><button class="btn primary sm" data-act="logW">記録する</button></div>
+      <p class="note">記録した体重は消費カロリーの目安にも使います。</p>
+    </section>
+    <section class="card"><h2>最近のトレーニング</h2>
+      ${recent.length ? `<ul class="hist">${recent.map(h => { const d = new Date(h.ts); return `<li><span><span class="num">${d.getMonth() + 1}/${d.getDate()}</span>（${WD[d.getDay()]}） ${esc(h.label)}</span><span class="muted num">${Math.max(1, Math.round(h.dur / 60))}分</span></li>`; }).join('')}</ul>` : '<p class="muted small">まだ記録がありません。最初の1回で肉球スタンプが押されます。</p>'}
+    </section>
+  </main>`;
+}
+function sparkline() {
+  const W = S.weights.slice(-30);
+  if (W.length < 2) return `<p class="muted small">${W.length ? `${W[0].d.slice(5).replace('-', '/')}：<b class="num">${W[0].kg}</b>kg。2回以上記録するとグラフになります。` : '毎週同じ時間帯に測るのがおすすめです。'}</p>`;
+  const vs = W.map(w => w.kg), mn = Math.min(...vs) - .5, mx = Math.max(...vs) + .5, w = 300, h = 80, l = 30, r = 8, t = 8, b = 16;
+  const X = i => l + i * (w - l - r) / (W.length - 1), Y = v => t + (mx - v) * (h - t - b) / (mx - mn);
+  const pts = W.map((x, i) => `${X(i).toFixed(1)},${Y(x.kg).toFixed(1)}`).join(' ');
+  const lastI = W.length - 1;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="体重の推移">
+    <line class="gd" x1="${l}" x2="${w - r}" y1="${Y(mx - .5)}" y2="${Y(mx - .5)}"/><line class="gd" x1="${l}" x2="${w - r}" y1="${Y(mn + .5)}" y2="${Y(mn + .5)}"/>
+    <text x="0" y="${Y(mx - .5) + 3}">${(mx - .5).toFixed(1)}</text><text x="0" y="${Y(mn + .5) + 3}">${(mn + .5).toFixed(1)}</text>
+    <polygon class="ar" points="${X(0)},${h - b} ${pts} ${X(lastI)},${h - b}"/><polyline class="ln" points="${pts}"/>
+    <circle class="pt" cx="${X(lastI)}" cy="${Y(W[lastI].kg)}" r="4"/>
+    <text x="${l}" y="${h - 2}">${W[0].d.slice(5).replace('-', '/')}</text><text x="${w - r}" y="${h - 2}" text-anchor="end">${W[lastI].d.slice(5).replace('-', '/')}</text>
+  </svg>`;
+}
+
+function vSettings() {
+  const p = S.profile, L = bondLv(S.xp);
+  return `<main class="screen">
+    <header><h1>設定</h1></header>
+    <section class="card">
+      <h2>トレーナー猫</h2>
+      <div class="obcat">${myCat('happy')}</div>
+      <div class="field"><label for="catName">名前</label><input class="inp" id="catName" data-cat="name" value="${esc(p.cat.name)}" maxlength="10"></div>
+      <div class="field"><span class="flabel">性格</span><div class="chips">${Object.entries(PERS).map(([k, l]) => `<button class="chip" data-act="catset" data-k="per" data-v="${k}" aria-pressed="${p.cat.per === k}">${l}</button>`).join('')}</div></div>
+    </section>
+    <section class="card">
+      <h2>あなたの情報</h2>
+      <p class="small">${esc(p.name || '名前なし')} · ${p.age}歳 · ${p.height}cm · ${p.weight}kg（BMI ${bmi(p).toFixed(1)}）<br>目標：${GOALS.find(g => g[0] === p.goal)[1]} · 週${p.days}回 · ${p.minutes}分<br>道具：${p.equipment.length ? p.equipment.map(k => EQUIP.find(x => x[0] === k)[1]).join('、') : 'なし'}</p>
+      <button class="btn ghost" data-act="editProfile">情報を変えてメニューを作り直す</button>
+    </section>
+    <section class="card">
+      <h2>データの引っ越し</h2>
+      <p class="muted small">記録はこの端末のブラウザに保存されます。機種変更のときは、コピーした文字を新しい端末の欄に貼りつけて読み込んでください。</p>
+      <textarea class="inp" id="backup" placeholder="ここに貼りつけて「読み込む」">${esc(backupText)}</textarea>
+      <div class="grid2"><button class="btn ghost sm" style="width:100%" data-act="exportData">データをコピー</button><button class="btn ghost sm" style="width:100%" data-act="importData">読み込む</button></div>
+    </section>
+    <section class="card">
+      <h2>ご利用にあたって</h2>
+      <p class="note">ねこトレは一般的な運動の目安を提案するアプリで、医療上の助言ではありません。持病のある方、妊娠中の方、治療中の方は、始める前に医師に相談してください。運動中に痛み・めまい・息苦しさを感じたら、すぐに中止してください。</p>
+      <button class="link" data-act="reset">すべてのデータを消す</button>
+    </section>
+  </main>`;
+}
+
+function vOnboard() {
+  const d = draft, N = 5;
+  const chip = (k, v, l, sub) => `<button class="chip" data-act="dchip" data-k="${k}" data-v="${v}" aria-pressed="${d[k] === v}">${l}${sub ? `<small>${sub}</small>` : ''}</button>`;
+  const mchip = (k, v, l) => `<button class="chip" data-act="dmulti" data-k="${k}" data-v="${v}" aria-pressed="${d[k].includes(v)}">${l}</button>`;
+  const num = (k, l, u, mn, mx, st = 1) => `<div class="field"><label for="d-${k}">${l}</label><div class="unit"><input class="inp" type="number" inputmode="decimal" id="d-${k}" data-dk="${k}" value="${esc(d[k])}" min="${mn}" max="${mx}" step="${st}"><span>${u}</span></div></div>`;
+  let body = '';
+  if (step === 0) {
+    body = `<div class="obcat">${catSVG({ mood: d.cat.per === 'hot' ? 'fire' : 'happy' })}</div>
+      <div class="bubble"><b>${esc(d.cat.name || 'トレーナー')}</b><p>${{ gentle: 'はじめましてにゃ。きみ専属のトレーナーになるにゃ。家にある道具で、続けられるメニューをいっしょに作ろうにゃ。', tsundere: 'べ、別にきみのために来たんじゃないにゃ。…でもトレーナーくらいはしてやるにゃ。', hot: 'はじめましてにゃ！きみの筋肉、ぼくが全力で応援するにゃ！' }[d.cat.per]}</p></div>
+      <div class="field"><span class="flabel">性格</span><div class="chips">${Object.entries(PERS).map(([k, l]) => `<button class="chip" data-act="dcat" data-k="per" data-v="${k}" aria-pressed="${d.cat.per === k}">${l}</button>`).join('')}</div></div>
+      <div class="field"><label for="d-catname">猫の名前</label><input class="inp" id="d-catname" data-dk="cat.name" value="${esc(d.cat.name)}" maxlength="10"></div>`;
+  } else if (step === 1) {
+    body = `<h1>あなたのことを教えてにゃ</h1>
+      <div class="field"><label for="d-name">ニックネーム</label><input class="inp" id="d-name" data-dk="name" value="${esc(d.name)}" maxlength="12" placeholder="猫が呼ぶ名前"></div>
+      <div class="field"><span class="flabel">性別</span><div class="chips">${SEXES.map(([v, l]) => chip('sex', v, l)).join('')}</div></div>
+      <div class="grid3">${num('age', '年齢', '歳', 12, 100)}${num('height', '身長', 'cm', 120, 220, .1)}${num('weight', '体重', 'kg', 30, 200, .1)}</div>
+      ${d.height && d.weight ? `<p class="muted small">BMI <b class="num">${bmi(d).toFixed(1)}</b>（${bmiLabel(bmi(d))}）</p>` : ''}`;
+  } else if (step === 2) {
+    body = `<h1>目標と経験は？</h1>
+      <div class="field"><span class="flabel">いちばんの目標</span><div class="choice">${GOALS.map(([v, l, s]) => chip('goal', v, l, s)).join('')}</div></div>
+      <div class="field"><span class="flabel">筋トレの経験</span><div class="choice">${LEVELS.map(([v, l, s]) => chip('level', v, l, s)).join('')}</div></div>`;
+  } else if (step === 3) {
+    body = `<h1>家にある道具は？</h1><p class="muted">あてはまるものを全部選んでください。何もなくても自重だけのメニューを作れます。</p>
+      <div class="chips">${EQUIP.map(([v, l]) => mchip('equipment', v, l)).join('')}</div>`;
+  } else if (step === 4) {
+    body = `<h1>続けやすいペースは？</h1>
+      <div class="field"><span class="flabel">1週間に何回？</span><div class="chips">${[2, 3, 4, 5, 6].map(v => chip('days', v, `週${v}回`)).join('')}</div></div>
+      <div class="field"><span class="flabel">1回の時間</span><div class="chips">${[10, 20, 30, 45, 60].map(v => chip('minutes', v, `${v}分`)).join('')}</div></div>
+      <div class="field"><span class="flabel">痛みや不安がある部位（任意）</span><div class="chips">${LIMITS.map(([v, l]) => mchip('limits', v, l)).join('')}</div></div>
+      <label class="check"><input type="checkbox" id="d-agree" data-dk="agree" ${d.agree ? 'checked' : ''}><span>持病・治療中・妊娠中の場合は医師に相談したうえで使います。運動中に痛みや体調の変化があればすぐ中止します。</span></label>
+      <p class="muted small">はじめは「少し物足りない」くらいがちょうどいいです。週${d.days}回が続いたら増やしましょう。</p>`;
+  }
+  return `<main class="screen ob">
+    <div class="steps">${[...Array(N)].map((_, i) => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}</div>
+    ${body}
+    ${obErr ? `<p class="err">${obErr}</p>` : ''}
+    <div class="obnav">${step > 0 ? '<button class="btn ghost" data-act="obBack">戻る</button>' : (editing ? '<button class="btn ghost" data-act="obCancel">やめる</button>' : '<span></span>')}
+      <button class="btn primary" data-act="obNext">${step === N - 1 ? 'メニューを作る' : '次へ'}</button></div>
+  </main>`;
+}
+
+function vModal() {
+  return `<div class="modal" role="dialog" aria-modal="true"><div class="card"><p>${modal.text}</p><div class="rowbtns"><button class="btn ghost" data-act="mNo">キャンセル</button><button class="btn primary" data-act="mYes">${modal.ok}</button></div></div></div>`;
+}
+
+/* ========= render ========= */
+function render() {
+  const app = $('#app');
+  let h;
+  if (!S.profile || view === 'onboard') { if (!draft) newDraft(); h = vOnboard(); }
+  else if (view === 'session' && S.session) h = vSession();
+  else if (view === 'result' && S.lastResult) h = vResult();
+  else {
+    if (!['home', 'status', 'equip', 'plan', 'log', 'settings'].includes(view)) view = 'home';
+    h = ({ home: vHome, status: vStatus, equip: vEquip, plan: vPlan, log: vLog, settings: vSettings })[view]() + vTabs();
+  }
+  if (modal) h += vModal();
+  app.innerHTML = h;
+  tickElapsed();
+}
+function go(v) { view = v; if (v === 'home') homeMsg = null; render(); window.scrollTo(0, 0); }
+function newDraft() {
+  draft = { name: '', sex: 'none', age: 30, height: 165, weight: 60, goal: 'health', level: 'beginner', equipment: [], limits: [], days: 3, minutes: 20, cat: { name: 'にゃんだ', per: 'gentle' }, agree: false };
+}
+let toastT;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2400); }
+function confirmBox(text, ok, fn) { modal = { text, ok, fn }; render(); }
+
+/* ========= sound / timer ========= */
+let AC = null;
+function unlockAudio() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { } }
+function beep(f = 880, d = .15) { try { if (!AC) return; const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = f; o.type = 'sine'; g.gain.setValueAtTime(.2, AC.currentTime); g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + d); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + d); } catch (e) { } }
+const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { } };
+let T = null;
+function startTimer(mode, sec, onEnd) {
+  T = { mode, end: Date.now() + sec * 1000, total: sec, onEnd, lastBeep: null };
+  const lbl = { rest: '休憩', work: 'キープ！', ready: 'よーい…' }[mode];
+  const C = 2 * Math.PI * 100;
+  $('#timer').innerHTML = `<div class="tsheet"><div class="tlabel">${lbl}</div>
+    <div class="ring ${mode === 'work' ? 'work' : ''}"><svg viewBox="0 0 220 220"><circle class="bg" cx="110" cy="110" r="100"/><circle class="fg" id="tfg" cx="110" cy="110" r="100" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg><div class="t" id="tnum">${sec}</div></div>
+    ${mode === 'rest' && S.session && S.session.battle ? (b => `<div class="rpg small" style="width:100%"><p>${b.msg}</p><div class="bar"><i style="width:${Math.round(b.hp / b.max * 100)}%"></i></div><p class="dim">${b.m.n}  HP ${b.hp} / ${b.max}</p></div>`)(S.session.battle) : ''}
+    <p class="muted small">${mode === 'rest' ? say('rest') : mode === 'work' ? 'フォームを保ってにゃ' : '3秒後にスタートにゃ'}</p>
+    <div class="rowbtns">${mode === 'rest' ? '<button class="btn ghost" data-act="tplus">+15秒</button><button class="btn primary" data-act="tskip">次のセットへ</button>' : '<button class="btn ghost" data-act="tcancel">やめる</button><button class="btn primary" data-act="tskip">完了にする</button>'}</div></div>`;
+  $('#timer').hidden = false;
+  tick();
+}
+function stopTimer(run) { const f = T && T.onEnd; T = null; $('#timer').hidden = true; if (run && f) f(); }
+function tick() {
+  if (!T) return;
+  const ms = T.end - Date.now(), left = Math.max(0, Math.ceil(ms / 1000));
+  const n = $('#tnum'), fg = $('#tfg');
+  if (n) n.textContent = left;
+  if (fg) fg.setAttribute('stroke-dashoffset', (2 * Math.PI * 100 * (1 - Math.max(0, ms) / (T.total * 1000))).toFixed(1));
+  if (left <= 3 && left > 0 && T.lastBeep !== left) { T.lastBeep = left; beep(660, .08); }
+  if (ms <= 0) { beep(990, .3); vib([200, 80, 200]); stopTimer(true); }
+}
+setInterval(tick, 200);
+function tickElapsed() { const el = $('#elapsed'); if (el && S.session) { const s = Math.floor((Date.now() - S.session.start) / 1000); el.textContent = `${Math.floor(s / 60)}:${pad(s % 60)}`; } }
+setInterval(tickElapsed, 1000);
+let wake = null;
+async function keepAwake(on) { try { if (on && 'wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } if (!on && wake) { await wake.release(); wake = null; } } catch (e) { } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.session) keepAwake(true); });
+
+/* ========= session ========= */
+function sessItem(it, mini) {
+  const e = EXM[it.id], pr = S.prog[it.id] || {};
+  const sets = mini ? 2 : clamp(it.sets + S.volAdj, 1, 5);
+  const loT = it.lo != null ? it.lo + (pr.extra || 0) : null, hiT = it.hi != null ? it.hi + (pr.extra || 0) : null;
+  const secT = it.sec ? it.sec + (pr.sec || 0) : null;
+  return { ...it, sets, loT, hiT, secT, log: Array.from({ length: sets }, () => ({ w: e.w ? (pr.w ?? '') : '', r: secT || hiT, done: false })) };
+}
+function startSession(mini) {
+  const di = nextDayIdx(), day = S.program.days[di];
+  let items = day.items;
+  if (mini) {
+    const easy = [...items].sort((a, b) => (EXM[a.id].w ? 1 : 0) - (EXM[b.id].w ? 1 : 0));
+    items = easy.slice(0, 2);
+  }
+  const sItems = items.map(it => sessItem(it, mini)), pl = player(), stl = Object.fromEntries(STATS.map(([k]) => [k, pl.st[k].L]));
+  const m = pickMonster(mini, S.history.filter(h => !h.mini).length + 1, pl.lv.L);
+  const expd = sItems.reduce((a, it) => a + it.log.reduce((b, l) => b + dmgOf(EXM[it.id], +l.r || 0, +l.w || 0, stl[P2S[EXM[it.id].p] || 'core'], false), 0), 0);
+  const max = Math.max(10, Math.round(expd * (m.boss ? 1 : .85)));
+  S.session = { start: Date.now(), di, mini, label: mini ? '5分だけモード' : `DAY ${di + 1} ${day.label}`, cur: mini ? 0 : -1, items: sItems,
+    battle: { m, max, hp: max, msg: `${m.boss ? 'ボスの ' : ''}${m.n}が あらわれた！`, idle: catIdle(), hit: 0, last: 0, won: false, stl } };
+  sessMsg = mini ? say('mini') : say('start');
+  save(); keepAwake(true); go('session');
+}
+function markDone(j) {
+  const s = S.session, it = s.items[s.cur], l = it.log[j];
+  l.done = !l.done;
+  const b = s.battle, e = EXM[it.id];
+  if (b && l.done) {
+    const r = +l.r || 0, crit = r > (it.secT || it.hiT), d = dmgOf(e, r, +l.w || 0, b.stl[P2S[e.p] || 'core'], crit);
+    l.dmg = d; b.hp = Math.max(0, b.hp - d); b.hit = Date.now(); b.last = d;
+    b.msg = `${pname()}の こうげき！${crit ? 'かいしんの いちげき！' : ''}<br>${b.m.n}に ${d}の ダメージ！`;
+    if (b.hp <= 0 && !b.won) { b.won = true; b.msg += `<br>${b.m.n}を たおした！`; }
+    b.idle = catIdle();
+  } else if (b && l.dmg) { b.hp = Math.min(b.max, b.hp + l.dmg); l.dmg = 0; b.won = b.hp <= 0; }
+  if (l.done) {
+    const remain = it.log.filter(x => !x.done).length;
+    sessMsg = remain === 1 ? say('last') : say('set');
+    vib(40);
+    const lastOverall = s.cur === s.items.length - 1 && remain === 0;
+    if (!lastOverall) startTimer('rest', it.rest, () => { if (S.session && it.log.every(x => x.done) && s.cur < s.items.length - 1) { s.cur++; sessMsg = ''; save(); render(); window.scrollTo(0, 0); } });
+  }
+  save(); render();
+}
+function finishSession() {
+  const s = S.session, p = S.profile, dur = Math.round((Date.now() - s.start) / 1000);
+  const items = s.items.map(it => ({ id: it.id, sets: it.log.filter(l => l.done).map(l => ({ w: +l.w || 0, r: +l.r || 0 })) })).filter(i => i.sets.length);
+  keepAwake(false);
+  if (!items.length) { S.session = null; save(); toast('完了したセットがないので記録しませんでした'); go('home'); return; }
+  const vol = items.reduce((a, it) => a + it.sets.reduce((b, x) => b + x.w * x.r * (EXM[it.id].side ? 2 : 1), 0), 0);
+  const kcal = Math.round((p.goal === 'diet' ? 5 : 3.5) * p.weight * dur / 3600 * 1.05);
+  const notes = [];
+  if (!s.mini) s.items.forEach(it => {
+    const e = EXM[it.id], done = it.log.filter(l => l.done);
+    if (!done.length) return;
+    const pr = S.prog[it.id] = { ...(S.prog[it.id] || {}) };
+    if (e.w) { const mw = Math.max(...done.map(l => +l.w || 0)); if (mw > 0) pr.w = mw; }
+    const full = done.length >= it.sets && done.every(l => +l.r >= (it.secT || it.hiT));
+    if (!full) return;
+    if (e.w) { if (pr.w > 0) { pr.w = +(pr.w + (e.step || 1)).toFixed(1); pr.extra = 0; notes.push(`${e.n}：次回は ${pr.w}kg に挑戦`); } return; }
+    const nx = e.next && EXM[e.next];
+    if (nx && canUse(nx, p) && !S.program.days.some(d => d.items.some(x => x.id === nx.id))) {
+      S.program.days.forEach(d => d.items.forEach((x, k) => { if (x.id === it.id) { const ni = makeItem(nx, x.slot, p); ni.sets = x.sets; d.items[k] = ni; } }));
+      notes.push(`${e.n} → 「${nx.n}」に昇格！`);
+    } else if (it.secT) { if ((pr.sec || 0) < 60) { pr.sec = (pr.sec || 0) + 5; notes.push(`${e.n}：次回は ${it.secT + 5}秒`); } }
+    else if ((pr.extra || 0) < 10) { pr.extra = (pr.extra || 0) + 2; notes.push(`${e.n}：次回は目標 +2回`); }
+  });
+  let prs = 0;
+  items.forEach(it => {
+    const e = EXM[it.id], v = x => e.w ? x.w : x.r;
+    let prev = 0, had = false;
+    S.history.forEach(h => h.items.forEach(y => { if (y.id === it.id) y.sets.forEach(x => { had = true; prev = Math.max(prev, v(x)); }); }));
+    const now = Math.max(...it.sets.map(v));
+    if (had && now > prev) { prs++; notes.unshift(`自己ベスト！${e.n} ${now}${e.w ? 'kg' : e.unit === 'sec' ? '秒' : '回'}`); }
+  });
+  const before = bondLv(S.xp), bonus = catBonus(), p0 = player(), ach0 = new Set(achievements().filter(a => a[2]).map(a => a[0]));
+  let xp = s.mini ? 5 : 10;
+  const bt = s.battle;
+  const h = { ts: Date.now(), label: s.label, mini: s.mini, dur, items, kcal, vol, rpe: null, prs, week: false, win: !!(bt && bt.won), boss: !!(bt && bt.m.boss), mon: bt ? bt.m.n : null };
+  const drop = h.win ? dropGear(s.mini, h.boss) : null;
+  if (drop) S.items.push(drop.id);
+  else if (h.win && !s.mini) { xp += 5; notes.push(`そうびは全部そろっている！${p.cat.name}のなかよし度 +5`); }
+  S.history.push(h);
+  if (weekCount() === p.days) { xp += 15; h.week = true; notes.push(`今週の目標 ${p.days}回 を達成！${p.cat.name}のなかよし度 +15`); }
+  const ex = calcExp(h, bonus); h.exp = ex.total; h.sx = ex.sx;
+  const p1 = player();
+  const rpg = {
+    gain: ex.total, lines: ex.lines, L0: p0.lv.L, L1: p1.lv.L, left: p1.lv.need - p1.lv.cur, pct: Math.round(p1.lv.cur / p1.lv.need * 100),
+    title: titleOf(p1.lv.L) !== titleOf(p0.lv.L) ? titleOf(p1.lv.L) : null,
+    ups: STATS.filter(([k]) => p1.st[k].L > p0.st[k].L).map(([k, l]) => [l, p0.st[k].L, p1.st[k].L]),
+    ach: achievements().filter(a => a[2] && !ach0.has(a[0])).map(a => a[0]),
+    mon: bt ? bt.m.n : null, won: h.win, drop: drop ? drop.id : null
+  };
+  S.xp += xp;
+  if (!s.mini) S.rot++;
+  const after = bondLv(S.xp), gifts = giftBond();
+  S.lastResult = { idx: S.history.length - 1, notes, xp, rpg, up: after > before, unlock: gifts.length ? gifts.map(g => g.n).join('」「') : null, msg: (after > before ? say('levelup') + ' ' : '') + say('finish') };
+  S.session = null; rpeMsg = null;
+  save(); go('result');
+}
+
+/* ========= actions ========= */
+const A = {
+  tab: t => { S.lastResult && view === 'result' && (S.lastResult = null); openHow = null; go(t.dataset.v); },
+  pet: t => {
+    const today = ymd(Date.now()), first = S.lastPet !== today;
+    if (first) { S.lastPet = today; S.xp += 2; giftBond().forEach(g => toast(`なかよしのしるしに「${g.n}」をもらった！`)); save(); }
+    homeMsg = say(first ? 'pet' : 'pet_again'); homeMood = 'happy';
+    render();
+    const b = $('.catbtn'); if (!b) return;
+    b.classList.add('petted');
+    const hs = b.querySelector('.hearts');
+    for (let i = 0; i < (first ? 4 : 2); i++) { const h = document.createElement('i'); h.textContent = '♥'; h.style.left = (20 + Math.random() * 60) + '%'; h.style.animationDelay = (i * .15) + 's'; hs.appendChild(h); }
+    setTimeout(() => b.classList.remove('petted'), 1300);
+  },
+  start: () => startSession(false),
+  mini: () => startSession(true),
+  resume: () => { keepAwake(true); go('session'); },
+  go: t => { S.session.cur = clamp(+t.dataset.v, 0, S.session.items.length - 1); sessMsg = ''; save(); render(); window.scrollTo(0, 0); },
+  done: t => markDone(+t.dataset.v),
+  work: t => {
+    const j = +t.dataset.v, s = S.session, it = s.items[s.cur];
+    startTimer('ready', 3, () => startTimer('work', +it.log[j].r || it.secT, () => { if (!it.log[j].done) markDone(j); }));
+  },
+  tplus: () => { if (T) { T.end += 15000; T.total += 15; } },
+  tskip: () => stopTimer(true),
+  tcancel: () => stopTimer(false),
+  finish: () => {
+    const s = S.session, left = s.items.reduce((a, it) => a + it.log.filter(l => !l.done).length, 0);
+    if (left) confirmBox(`まだ${left}セット残っています。ここで完了にしますか？`, '完了にする', finishSession); else finishSession();
+  },
+  quit: () => confirmBox('トレーニングを終了しますか？完了したセットは記録されます。', '終了する', finishSession),
+  swapSess: () => {
+    const s = S.session, it = s.items[s.cur];
+    const used = new Set(s.items.map(x => x.id));
+    const c = candidates(it.slot, S.profile, used);
+    if (!c.length) { toast('入れ替えられる種目がありません'); return; }
+    const ni = makeItem(c[0].e, it.slot, S.profile); ni.sets = it.sets;
+    s.items[s.cur] = sessItem(ni, s.mini); sessMsg = `「${c[0].e.n}」に替えたにゃ`;
+    save(); render();
+  },
+  swapPlan: t => {
+    const [i, j] = t.dataset.v.split('-').map(Number), d = S.program.days[i], it = d.items[j];
+    const used = new Set(d.items.map(x => x.id));
+    const c = candidates(it.slot, S.profile, used);
+    if (!c.length) { toast('この条件で替えられる種目がありません'); return; }
+    const ni = makeItem(c[0].e, it.slot, S.profile); ni.sets = it.sets; d.items[j] = ni;
+    save(); toast(`「${c[0].e.n}」に替えました`); render();
+  },
+  how: t => { openHow = openHow === t.dataset.v ? null : t.dataset.v; render(); },
+  rpe: t => {
+    const h = S.history[S.lastResult.idx], k = t.dataset.v;
+    if (h.rpe === k) return;
+    h.rpe = k;
+    if (k === 'hard') S.volAdj = Math.max(-1, S.volAdj - 1);
+    if (k === 'easy') S.volAdj = Math.min(1, S.volAdj + 1);
+    rpeMsg = say(k); save(); render();
+  },
+  cal: t => { calOff = Math.min(0, calOff + +t.dataset.v); render(); },
+  logW: () => {
+    const v = parseFloat($('#wIn').value);
+    if (!(v >= 25 && v <= 250)) { toast('体重は25〜250kgの数字で入れてください'); return; }
+    const d = ymd(Date.now()); S.weights = S.weights.filter(w => w.d !== d); S.weights.push({ d, kg: v });
+    S.profile.weight = v; save(); toast(`${v}kg を記録しました`); render();
+  },
+  catset: t => { S.profile.cat[t.dataset.k] = t.dataset.v; save(); render(); },
+  equip: t => { const g = GEARM[t.dataset.v]; if (!g || !S.items.includes(g.id)) return; if (S.equip[g.slot] === g.id) delete S.equip[g.slot]; else { S.equip[g.slot] = g.id; toast(`${g.n}を そうびした`); } save(); render(); },
+  pace: t => {
+    const el = t.closest('.demo');
+    if (DM.mode === 'pace') { DM.mode = 'demo'; DM.start = performance.now(); try { speechSynthesis.cancel(); } catch (e) { } return; }
+    DM.mode = 'pace'; DM.key = el.dataset.ex; DM.target = +el.dataset.target || 10; DM.start = performance.now(); DM.phk = -1; DM.cd = -1; speak('よーい');
+  },
+  dsound: t => { DM.sound = !DM.sound; S.demoSound = DM.sound; save(); t.setAttribute('aria-pressed', DM.sound); t.textContent = DM.sound ? '音声ガイド ON' : '音声ガイド OFF'; if (DM.sound) speak('音声ガイドをオンにしました'); },
+  dplay: t => { DM.play = !DM.play; DM.start = performance.now(); t.textContent = DM.play ? 'お手本を止める' : 'お手本を動かす'; },
+  unequip: t => { delete S.equip[t.dataset.v]; save(); render(); },
+  editProfile: () => { draft = deep(S.profile); draft.agree = true; editing = true; step = 1; obErr = ''; go('onboard'); },
+  exportData: () => {
+    backupText = JSON.stringify({ ...S, session: null });
+    const fallback = () => { const b = $('#backup'); if (b) { b.value = backupText; b.select(); } toast('下の欄の文字をすべて選んでコピーしてください'); };
+    try { navigator.clipboard.writeText(backupText).then(() => toast('コピーしました'), fallback); } catch (e) { fallback(); }
+    $('#backup').value = backupText;
+  },
+  importData: () => {
+    try {
+      const o = JSON.parse($('#backup').value.trim());
+      if (!o || o.v !== 1 || !o.profile || !o.program) throw 0;
+      confirmBox('今のデータを上書きして読み込みますか？', '読み込む', () => { S = Object.assign(fresh(), o); backupText = ''; save(); toast('読み込みました'); go('home'); });
+    } catch (e) { toast('データの形式が正しくありません。コピーした文字を全部貼りつけてください'); }
+  },
+  reset: () => confirmBox('記録・メニュー・猫のなかよし度がすべて消えます。元には戻せません。', '消す', () => { S = fresh(); save(); draft = null; step = 0; editing = false; go('onboard'); }),
+  mYes: () => { const f = modal.fn; modal = null; f(); if (view !== 'result' && view !== 'home' && view !== 'onboard') render(); },
+  mNo: () => { modal = null; render(); },
+  // onboarding
+  dchip: t => { const k = t.dataset.k; draft[k] = ['days', 'minutes'].includes(k) ? +t.dataset.v : t.dataset.v; render(); },
+  dmulti: t => { const k = t.dataset.k, v = t.dataset.v, a = draft[k]; draft[k] = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; render(); },
+  dcat: t => { draft.cat[t.dataset.k] = t.dataset.v; render(); },
+  obBack: () => { step--; obErr = ''; render(); },
+  obCancel: () => { editing = false; draft = null; go('settings'); },
+  obNext: () => {
+    obErr = '';
+    if (step === 0 && !draft.cat.name.trim()) obErr = '猫の名前を入れてください';
+    if (step === 1) {
+      if (!(draft.age >= 12 && draft.age <= 100)) obErr = '年齢は12〜100の数字で入れてください';
+      else if (!(draft.height >= 120 && draft.height <= 220)) obErr = '身長は120〜220cmの数字で入れてください';
+      else if (!(draft.weight >= 25 && draft.weight <= 250)) obErr = '体重は25〜250kgの数字で入れてください';
+    }
+    if (step === 4 && !draft.agree) obErr = '確認事項にチェックを入れてください';
+    if (obErr) { render(); return; }
+    if (step < 4) { step++; render(); window.scrollTo(0, 0); return; }
+    const p = deep(draft); delete p.agree; p.name = p.name.trim(); p.cat.name = p.cat.name.trim();
+    const first = !S.profile;
+    S.profile = p; S.program = buildProgram(p); S.rot = 0; S.volAdj = 0;
+    if (first) S.weights = [{ d: ymd(Date.now()), kg: p.weight }];
+    save(); draft = null; editing = false; step = 0;
+    toast(first ? 'メニューができました' : 'メニューを作り直しました');
+    go(first ? 'home' : 'plan');
+  }
+};
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || t.disabled) return;
+  const f = A[t.dataset.act];
+  if (f) { unlockAudio(); f(t, e); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.dk && draft) {
+    const k = t.dataset.dk;
+    if (k === 'cat.name') draft.cat.name = t.value;
+    else if (k === 'agree') draft.agree = t.checked;
+    else if (['age', 'height', 'weight'].includes(k)) draft[k] = t.value === '' ? '' : +t.value;
+    else draft[k] = t.value;
+  } else if (t.dataset.log && S.session) {
+    const [j, f] = t.dataset.log.split('-'); S.session.items[S.session.cur].log[+j][f] = t.value; save();
+  } else if (t.dataset.cat && S.profile) {
+    S.profile.cat.name = t.value.slice(0, 10) || 'にゃんだ'; save();
+  }
+});
+
+render();
+</script>

@@ -1,0 +1,15 @@
+{
+  "name": "ねこトレ",
+  "short_name": "ねこトレ",
+  "description": "家にある道具と体の情報から、猫のトレーナーがメニューを組んでくれる筋トレアプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F1F2F7",
+  "theme_color": "#D4426F",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
