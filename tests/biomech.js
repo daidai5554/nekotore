@@ -10,6 +10,7 @@ function angles(J, s = 'N') {
   return { knee, elbow, hip, trunk, foot };
 }
 // [お手本, ポーズ, 関節, 下限, 上限, 側（N=手前・F=奥）]
+// 四つんばいは腕（肩〜手首 約0.33×身長）が太もも（約0.25×身長）より長いので、上体は15〜20°ほど前上がりになるのが自然
 const REF = [
   ['squat', 1, 'knee', 100, 135], ['squat', 1, 'hip', 90, 135], ['squat', 1, 'trunk', 25, 50],
   ['goblet', 1, 'knee', 105, 140], ['goblet', 1, 'trunk', 15, 45],
@@ -30,6 +31,15 @@ const REF = [
   ['bridge', 1, 'hip', -15, 15], ['thrust', 1, 'hip', -15, 15], ['thrust', 1, 'knee', 70, 110],
   ['legraise', 1, 'hip', 70, 100], ['crunch', 1, 'trunk', 60, 80],
   ['calf', 1, 'foot', 25, 45], ['dbcalf', 1, 'foot', 25, 45],
-  ['french', 1, 'elbow', 110, 165], ['dip', 1, 'elbow', 60, 110], ['abroll', 1, 'hip', 0, 45]
+  ['french', 1, 'elbow', 110, 165], ['dip', 1, 'elbow', 60, 110], ['abroll', 1, 'hip', 0, 45],
+  ['pistol', 1, 'knee', 100, 140], ['jumpsquat', 1, 'knee', 90, 135], ['swing', 0, 'hip', 60, 105], ['swing', 0, 'knee', 10, 45], ['swing', 1, 'hip', -10, 10],
+  ['bridge1', 1, 'hip', -15, 15], ['stepup', 0, 'knee', 70, 115], ['stepup', 1, 'knee', 0, 15],
+  ['inclinepush', 1, 'elbow', 70, 140], ['wallpush', 1, 'elbow', 60, 140], ['declinepush', 1, 'elbow', 70, 140], ['declinepush', 0, 'hip', -12, 12],
+  ['floorpress', 0, 'elbow', 70, 110], ['bandpress', 0, 'elbow', 70, 130], ['bandpress', 1, 'elbow', 0, 20],
+  ['pulldown', 1, 'elbow', 90, 155], ['bandrow', 1, 'elbow', 70, 125], ['bbrow', 1, 'elbow', 60, 115], ['bbrow', 0, 'trunk', 45, 80],
+  ['kickback', 0, 'elbow', 70, 110], ['kickback', 1, 'elbow', 0, 20],
+  ['deadbug', 0, 'knee', 80, 100], ['deadbug', 0, 'hip', 80, 100], ['birddog', 0, 'hip', 60, 105], ['birddog', 0, 'knee', 80, 100], ['birddog', 1, 'hip', -25, 15, 'F'],
+  ['hangknee', 1, 'hip', 80, 125], ['highknee', 0, 'hip', 70, 100], ['burpee', 1, 'knee', 90, 145], ['burpee', 2, 'hip', -12, 12],
+  ['mountain', 0, 'hip', 90, 135]
 ];
 module.exports = { angles, REF };
