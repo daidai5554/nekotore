@@ -1469,9 +1469,9 @@ function vSession() {
       <div class="eyebrow">${s.cur + 1} / ${n} · ${PL[e.p]}</div>
       <h2>${e.n}</h2>
       <p class="target">${it.sets}セット × ${amt}${e.side ? '（左右それぞれ）' : ''} · 休憩${it.rest}秒</p>
-      ${e.w ? `<p class="prev">重さは${(e.req || []).some(r => r.includes('barbell')) ? 'バーとプレートの合計' : (e.req || []).some(r => r.includes('kettlebell')) && !(e.req || []).some(r => r.includes('dumbbell')) ? 'ケトルベル1つ分' : 'ダンベル1つ分'}で記録します。</p>` : ''}
+      ${e.w ? `<p class="prev">重さは${(e.req || []).some(r => r.includes('barbell')) ? 'バーとプレートの合計' : (e.req || []).some(r => r.includes('kettlebell')) && !(e.req || []).some(r => r.includes('dumbbell')) ? 'ケトルベル1つ分' : 'ダンベル1つ分'}で記録します。${it.guess ? `はじめは体重などから出した目安の${it.guess}kgを入れています。${it.hiT}回が楽にできたら重く、${it.loT}回できなければ軽くしてください。` : ''}</p>` : ''}
       ${last ? `<p class="prev">前回：${last}</p>` : ''}
-      ${it.guess ? `<p class="prev">重さは体重などから出した目安（${it.guess}kg）です。${it.hiT}回が楽にできたら重く、${it.loT}回できなければ軽くしてください。</p>` : ''}
+
     </section>
     ${demoHTML(e, it)}
     <details class="card" style="gap:8px"><summary style="font-weight:700;cursor:pointer">手順とコツを読む</summary><div class="howbox" style="padding:8px 0 0">${howHTML(e)}</div></details>
