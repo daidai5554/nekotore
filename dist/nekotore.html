@@ -405,7 +405,7 @@ const BOSSES = [
   { k: 'ghost', n: '三日坊主', c: '#F29A7A' }, { k: 'dragon', n: 'ソファードラゴン', c: '#78C2B2' },
   { k: 'golem', n: 'リバウンド大王', c: '#9A7AE0' }, { k: 'dragon', n: 'まあいっか魔王', c: '#6A6FB0' }
 ];
-const PL = { squat: '脚・お尻', hinge: 'お尻・もも裏', lunge: '脚・お尻', glute: 'お尻', push_h: '胸・腕', push_v: '肩', pull_v: '背中', pull_h: '背中', posture: '背中・姿勢', bi: '腕（力こぶ）', tri: '腕（二の腕）', core: '体幹・お腹', calf: 'ふくらはぎ', cardio: '有酸素' };
+const PL = { balance: 'バランス', squat: '脚・お尻', hinge: 'お尻・もも裏', lunge: '脚・お尻', glute: 'お尻', push_h: '胸・腕', push_v: '肩', pull_v: '背中', pull_h: '背中', posture: '背中・姿勢', bi: '腕（力こぶ）', tri: '腕（二の腕）', core: '体幹・お腹', calf: 'ふくらはぎ', cardio: '有酸素' };
 
 // req: 各グループのどれか1つが必要 / avoid: 該当部位に不安がある人には出さない
 const EX = [
@@ -477,6 +477,8 @@ const EX = [
   { id: 'ab_roll', n: '膝コロ（腹筋ローラー）', p: 'core', lv: 2, req: [['abroller']], r: [6, 12], avoid: ['back'], how: ['膝をついてローラーを握る', '腰をそらさない範囲で前へ転がして戻る'], cue: '無理に遠くまで行かないにゃ' },
   { id: 'hang_knee', n: 'ハンギングニーレイズ', p: 'core', lv: 2, req: [['pullup']], avoid: ['shoulder', 'back'], how: ['バーにぶら下がる', '膝を胸のほうへ引き上げる'], cue: '体をゆらさないにゃ' },
   // calf
+  // balance：転倒予防のバランス運動（ACSM：高齢者は週2〜3日）
+  { id: 'single_leg_stand', n: '片脚立ち', p: 'balance', lv: 1, unit: 'sec', side: 1, how: ['椅子の背や壁のそばに立つ', '片脚を少し浮かせて姿勢を保つ（ふらついたらすぐ手をつく）'], cue: '目線はまっすぐ前にゃ' },
   { id: 'calf_raise', n: 'カーフレイズ', p: 'calf', lv: 1, r: [15, 20], how: ['壁に手をついて立つ', 'かかとを上げ下げする'], cue: '第二の心臓をきたえるにゃ' },
   { id: 'db_calf', n: 'ダンベルカーフレイズ', p: 'calf', lv: 1, req: [['dumbbell']], w: 1, step: 2, r: [12, 20], how: ['ダンベルを持って立つ', 'かかとを高く上げ下げする'], cue: '上で1秒止めるにゃ' },
   // cardio
@@ -509,7 +511,7 @@ const GROUPS = {
   pull: ['pull_h', 'pull_v', 'posture'], pull_v: ['pull_v', 'pull_h', 'posture'], pull_h: ['pull_h', 'posture', 'pull_v'],
   arms: ['bi', 'tri'], squat: ['squat', 'lunge'], lunge: ['lunge', 'squat'], hinge: ['hinge', 'glute'], glute: ['glute', 'hinge'],
   push_v: ['push_v', 'push_h'], posture: ['posture', 'pull_h'], push_h: ['push_h'], tri: ['tri', 'push_h'], bi: ['bi', 'pull_h'],
-  core: ['core'], calf: ['calf'], cardio: ['cardio']
+  core: ['core'], calf: ['calf'], cardio: ['cardio'], balance: ['balance']
 };
 // ウォームアップ：全身を温めたあと、その日に使う部位を軽く動かす
 const WARMUP = {
@@ -596,9 +598,6 @@ function fresh() { return { v: 1, profile: null, program: null, history: [], wei
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { } return fresh(); }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
 let S = load();
-if (S.profile && S.profile.cat.name === 'ムギ') S.profile.cat.name = 'にゃんだ';
-if (S.profile) giftBond();
-if (S.acc) { const m = { collar: 'collar', band: 'band', glasses: 'glasses', crown: 'crown' }[S.acc]; if (m) { if (!S.items.includes(m)) S.items.push(m); S.equip[GEARM[m].slot] = m; } delete S.acc; }
 let view = S.profile ? (S.session ? 'session' : 'home') : 'onboard';
 let step = 0, draft = null, editing = false, obErr = '', modal = null, homeMsg = null, homeMood = 'normal';
 let calOff = 0, openHow = null, sessMsg = '', rpeMsg = null, backupText = '';
@@ -631,9 +630,11 @@ function makeItem(e, slot, p) {
   // 休憩：重い複数関節種目は長め、単関節種目は短め（NSCA・ACSMの目安：筋肥大30〜90秒、高重量2〜3分）
   const iso = isIso(e), heavy = (e.req || []).some(r => r.includes('barbell'));
   let rest = { muscle: heavy ? 150 : iso ? 60 : 90, diet: iso ? 30 : 45, health: iso ? 45 : 60, posture: iso ? 45 : 60 }[g] + (p.age >= 60 ? 15 : 0);
-  if (['cardio', 'core'].includes(e.p)) rest = Math.min(rest, 45);
+  if (['cardio', 'core', 'balance'].includes(e.p)) rest = Math.min(rest, e.p === 'balance' ? 20 : 45);
+  // バーベルの重い種目（スクワット・デッドリフトなど）は目的にかかわらず90秒以上休む（NSCA：高重量は2分以上が目安）
+  if (heavy) rest = Math.max(rest, g === 'muscle' ? 150 : 90);
   const it = { id: e.id, slot, sets, rest };
-  if (e.unit === 'sec') it.sec = e.id === 'dead_hang' ? [15, 20, 30][L] : e.p === 'cardio' ? [20, 30, 40][L] : [20, 30, 45][L];
+  if (e.unit === 'sec') it.sec = e.id === 'single_leg_stand' ? [20, 30, 30][L] : e.id === 'dead_hang' ? [15, 20, 30][L] : e.p === 'cardio' ? [20, 30, 40][L] : [20, 30, 45][L];
   else {
     let r = e.r || { muscle: [8, 12], diet: [12, 15], health: [10, 15], posture: [10, 15] }[g];
     if (!e.w && !e.r && g === 'muscle') r = [8, 15];
@@ -652,7 +653,7 @@ function estSec(it, sets = it.sets) { return sets * workSec(it, EXM[it.id], it.s
 // 筋トレの値は「休憩を含めたトレーニング全体の平均」なので、休憩込みの時間にかける。有酸素は動作中だけにかけ、休憩は2.0METs
 const MET = { rest: 1.5, warm: 3.0, cardioRest: 2.0 };
 function metOf(e, goal = S.profile ? S.profile.goal : 'health') {
-  const o = { rope: 11.0, burpee: 8.0, jumping_jack: 7.7, mountain: 8.0, high_knee: 6.0, step_jack: 4.0, kb_swing: 6.0 };
+  const o = { single_leg_stand: 2.3, rope: 11.0, burpee: 8.0, jumping_jack: 7.7, mountain: 8.0, high_knee: 6.0, step_jack: 4.0, kb_swing: 6.0 };
   if (o[e.id]) return o[e.id];
   if (e.w) return goal === 'muscle' ? 5.0 : goal === 'diet' ? 4.5 : 3.5;   // ウエイト：中強度3.5〜高強度6.0
   if (['core', 'posture', 'glute', 'calf'].includes(e.p)) return 2.8;      // 軽めの自重（腹筋・小さな動き）
@@ -697,10 +698,10 @@ function startW(e, p = S.profile, reps = 12) {
 const minItems = p => p.minutes <= 10 ? 2 : 3;
 const daySec = (items, p) => (p.minutes <= 10 ? 120 : 180) + items.reduce((a, it) => a + estSec(it), 0);
 // 種目の分類（週のバランス確認用）
-const PGROUP = { squat: 'legs', lunge: 'legs', hinge: 'legs', glute: 'legs', calf: 'legs', push_h: 'push', push_v: 'push', tri: 'push', pull_v: 'pull', pull_h: 'pull', posture: 'pull', bi: 'pull', core: 'core', cardio: 'cardio' };
+const PGROUP = { balance: 'balance', squat: 'legs', lunge: 'legs', hinge: 'legs', glute: 'legs', calf: 'legs', push_h: 'push', push_v: 'push', tri: 'push', pull_v: 'pull', pull_h: 'pull', posture: 'pull', bi: 'pull', core: 'core', cardio: 'cardio' };
 // 時間に収める：①4セット→3セット ②3セット→2セット ③休憩を15秒ずつ短く（下限あり）
 function fitTime(items, p) {
-  const budget = p.minutes * 60, floor = it => p.goal === 'muscle' ? ((EXM[it.id].req || []).some(r => r.includes('barbell')) ? 90 : 45) : 30;
+  const budget = p.minutes * 60, floor = it => (EXM[it.id].req || []).some(r => r.includes('barbell')) ? 90 : p.goal === 'muscle' ? 45 : 30;
   // 優先度の低い（後ろの）種目からセット数を減らし、メインの種目のセット数を守る
   for (const cap of [3, 2]) for (const it of [...items].reverse()) { if (daySec(items, p) <= budget) return; if (it.sets > cap) it.sets = cap; }
   let changed = true;
@@ -717,15 +718,17 @@ function buildDay(type, v, p, seen = new Set()) {
   // 目標に直結する種目は時間が短くても入るよう、前のほうに置く
   if (p.goal === 'diet') slots.splice(2, 0, 'cardio');
   if (p.goal === 'posture' && !slots.includes('posture')) slots.splice(1, 0, 'posture');
+  if (p.age >= 60) slots.splice(2, 0, 'balance');
   const used = new Set(), items = [], budget = p.minutes * 60;
   const tryAdd = (slot, force) => {
     const c = candidates(slot, p, used, seen); if (!c.length) return false;
     const close = c.filter(x => x.s > c[0].s - 1.2), e = close[v % close.length].e, it = makeItem(e, slot, p);
     if (!force && daySec([...items, it], p) > budget) return null;
-    if ((p.goal === 'posture' && slot === 'posture') || (p.goal === 'diet' && slot === 'cardio')) it.key = 1;
+    if ((p.goal === 'posture' && slot === 'posture') || (p.goal === 'diet' && slot === 'cardio') || slot === 'balance') it.key = 1;
     items.push(it); used.add(e.id); return true;
   };
-  for (const slot of slots) { if (tryAdd(slot, items.length < minItems(p)) === null) break; }
+  // バランス運動（60歳以上）は短時間でも必ず入れる
+  for (const slot of slots) { if (tryAdd(slot, items.length < minItems(p) || slot === 'balance') === null) break; }
   // 器具や痛みの条件で種目が足りないときは、ほかの部位で補う
   for (const slot of ['core', 'glute', 'calf', 'posture', 'cardio', 'push_h', 'squat']) { if (items.length >= minItems(p)) break; tryAdd(slot, true); }
   fitTime(items, p);
@@ -734,7 +737,7 @@ function buildDay(type, v, p, seen = new Set()) {
 // 1週間で脚・押す・引く・体幹（減量なら有酸素も）がそろうように補う
 // 行う順番：大きな筋肉を使う多関節種目 → 単関節・小さな筋肉 → 体幹 → 有酸素（ACSM の推奨順）
 function orderItems(items) {
-  const rank = it => { const e = EXM[it.id]; return e.p === 'cardio' ? 3 : e.p === 'core' ? 2 : isIso(e) || ['glute', 'calf'].includes(e.p) ? 1 : 0; };
+  const rank = it => { const e = EXM[it.id]; return e.p === 'cardio' ? 3 : e.p === 'core' || e.p === 'balance' ? 2 : isIso(e) || ['glute', 'calf'].includes(e.p) ? 1 : 0; };
   const sorted = items.map((it, i) => [it, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
   items.splice(0, items.length, ...sorted);
 }
@@ -751,6 +754,9 @@ function balanceWeek(days, p) {
       const it = makeItem(c[0].e, SLOT[g], p);
       const count = k => days.reduce((a, x) => a + x.items.filter(y => PGROUP[EXM[y.id].p] === k).length, 0);
       if (daySec([...d.items, it], p) <= p.minutes * 60) { d.items.push(it); break; }
+      // セット数・休憩を詰めれば入るなら入れる
+      const trial = [...d.items, it].map(x => ({ ...x })); fitTime(trial, p);
+      if (daySec(trial, p) <= p.minutes * 60) { d.items.splice(0, d.items.length, ...trial); break; }
       // 時間がなければ、週にほかにもある部位の最後の種目と入れかえる
       const k = [...d.items].reverse().findIndex(y => !y.key && count(PGROUP[EXM[y.id].p]) > 1);
       if (k >= 0) { d.items[d.items.length - 1 - k] = it; fitTime(d.items, p); break; }
@@ -760,7 +766,7 @@ function balanceWeek(days, p) {
 const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it), 0)) / 60);
 
 // メニューの作り方を変えたら数字を上げる。古いメニューは読みこみ時に作り直す
-const PROGRAM_VER = 2;
+const PROGRAM_VER = 3;
 function buildProgram(p) {
   const seen = new Set();
   const days = SPLITS[p.days].map(([t, v]) => { const d = buildDay(t, v, p, seen); d.items.forEach(it => seen.add(it.id)); return d; });
@@ -780,7 +786,8 @@ function buildProgram(p) {
   R.push(`使える道具：${eq}`);
   if (p.limits.length) R.push(`${p.limits.map(k => LIMITS.find(x => x[0] === k)[1]).join('・')}に負担の大きい種目を外しています。痛みが出たらすぐ中止してください。`);
   if (!allowImpact(p)) R.push('関節を守るため、ジャンプなど着地の衝撃がある種目は除外しています。');
-  if (p.age >= 60) R.push('年齢に合わせてセット数を控えめに、休憩を長めにしています。');
+  if (p.age >= 60) R.push('年齢に合わせてセット数を控えめに、休憩を長めにしています。転倒予防のため、バランスの運動（片脚立ち）を入れています。');
+  if (p.goal !== 'muscle') R.push('筋トレとは別に、早歩きなどの有酸素運動を週150分（1日20〜30分）ほど行うのがおすすめです（ACSM・WHO）。');
   // 成長期（NSCA の青少年向け指針）：重さより回数とフォーム。高齢・高BMIは開始前に医師へ相談
   if (p.age < 18) R.push('成長期なので、重い重さは使わず、回数とフォームを優先しています。できれば大人に見てもらいながら行ってください。');
   if (b >= 35 || p.age >= 70) R.push('始める前に、かかりつけの医師に運動してよいか相談してください。');
@@ -828,7 +835,7 @@ function pickHomeMsg() {
 
 /* ========= RPG ========= */
 const STATS = [['arm', 'ちから', '上半身'], ['leg', 'ふんばり', '下半身'], ['core', 'バランス', '体幹・姿勢'], ['sta', 'スタミナ', '持久力']];
-const P2S = { push_h: 'arm', push_v: 'arm', pull_v: 'arm', pull_h: 'arm', bi: 'arm', tri: 'arm', squat: 'leg', hinge: 'leg', lunge: 'leg', glute: 'leg', calf: 'leg', core: 'core', posture: 'core', cardio: 'sta' };
+const P2S = { balance: 'core', push_h: 'arm', push_v: 'arm', pull_v: 'arm', pull_h: 'arm', bi: 'arm', tri: 'arm', squat: 'leg', hinge: 'leg', lunge: 'leg', glute: 'leg', calf: 'leg', core: 'core', posture: 'core', cardio: 'sta' };
 const TYPES = { arm: 'パワー型', leg: 'ふんばり型', core: 'バランス型', sta: '持久型' };
 const TITLES = [[1, '筋トレみならい'], [3, 'かけだし戦士'], [5, '腕立ての使い手'], [8, '鉄の意志をもつ者'], [12, '筋肉の騎士'], [16, 'しなやかな勇者'], [20, '伝説のトレーニー'], [30, 'にゃんだの英雄']];
 const needP = L => Math.round(60 * L ** 1.4), needS = L => Math.round(40 * L ** 1.3);
@@ -1063,6 +1070,7 @@ const MOT = {
   legraise: { an: 'hip', at: [130, 163], P: [{ t: -90, ...L2(88, 88), ft: 180, ftF: 180, ...A2(90, 90) }, { t: -90, ...L2(172, 172), ft: 95, ftF: 95, ...A2(90, 90) }], ph: PH(1, 2, '脚を上げる', '床すれすれまで下ろす'), pts: ['腰を床につけたまま', '反動を使わない', 'きついときは膝を曲げる'], ng: '腰が浮いて反る' },
   abroll: { an: 'kneeN', at: [80, 167], props: [{ k: 'roller', j: 'handN' }], P: [{ t: 125, ...L2(25, -90), ft: -90, ftF: -90, hN: [114, 161], hF: [114, 161] }, { t: 105, ...L2(-75, -90), ft: -90, ftF: -90, hN: [184, 161], hF: [184, 161] }], ph: PH(2, 1.5, '腰を反らさず前へ転がす', 'お腹の力で戻る'), pts: ['腰を反らさない範囲で', 'お腹に力を入れ続ける', '無理に遠くまで行かない'], ng: '腰が反って落ちる' },
   birddog: { an: 'kneeN', at: [80, 167], P: [{ t: 111, ...L2(0, -90), ft: -90, ftF: -90 }, { t: 111, thN: 0, snN: -90, thF: -90, snF: -90, ft: -90, ftF: -90, uaN: 100, faN: 100 }], ph: PH(1.2, 1.5, '反対の手と脚をのばす', 'もどす', 2, '2秒止める'), pts: ['背中を水平に保つ', '手と脚は床と平行まで', 'ぐらぐらしないように'], ng: '腰が反る・体が傾く' },
+  balance: { sup: 1, an: 'ankN', at: [120, FLY], props: [{ k: 'chair', x: 150, y: 128, w: 34, back: 'left' }], P: [{ thF: 35, snF: -20, ...A2(25, 25) }], ph: [[0, 3, '片脚でキープ', 'k']], pts: ['いすの背にすぐ手が届く場所で', '軸足の膝はのばしきらない', '目線はまっすぐ前'], ng: 'ふらついても手をつかずにがまんする' },
   calf: { an: 'toeN', at: [128, FLY], props: [{ k: 'wall', x: 168 }], P: [{ hN: [166, 72], hF: [166, 72] }, { ft: 55, ftF: 55, hN: [166, 72], hF: [166, 72] }], ph: PH(1, 1.5, 'かかとを上げる', 'ゆっくり下ろす', 1, '上で止める'), pts: ['親指の付け根で押す', '上で1秒止める', 'ゆっくり下ろす'], ng: '反動ではずむ' },
   stepjack: { v: 'f', an: 'hip', at: [120, 110], P: [{}, { thN: 24, snN: 24, ...A2(160, 175) }, { thF: 24, snF: 24, ...A2(160, 175) }], ph: [[1, .5, '片足を横へ・腕を上へ'], [0, .5, 'もどす'], [2, .5, '反対の足を横へ'], [0, .5, 'もどす']], pts: ['跳ばずにリズムよく', '腕は大きく', '背すじをのばす'], ng: '猫背になる' },
   jack: { v: 'f', an: 'hip', at: [120, 110], P: [{}, { ...L2(18, 18), ...A2(165, 172), jy: -6 }], ph: [[1, .4, '跳んで開く'], [0, .4, '跳んでとじる']], pts: ['つま先で軽く跳ぶ', '腕は頭の上で合わせる', '着地はやわらかく'], ng: 'かかとからドスンと着地' },
@@ -1095,7 +1103,7 @@ const MOTMAP = {
   pullup: 'pullup', neg_pullup: 'negpull', dead_hang: 'hang', band_pulldown: 'pulldown', db_row: 'dbrow', band_row: 'bandrow', bb_row: 'bbrow', db_rear: 'rearfly',
   prone_w: 'wraise', y_raise: 'yraise', band_pa: 'pullapart', db_curl: 'curl', band_curl: 'bandcurl', db_ext: 'french', band_kick: 'kickback', bench_dip: 'dip',
   diamond: 'diamond', dead_bug: 'deadbug', plank: 'plank', bird_dog: 'birddog', crunch: 'crunch', side_plank: 'sideplank', leg_raise: 'legraise', ab_roll: 'abroll',
-  hang_knee: 'hangknee', calf_raise: 'calf', db_calf: 'dbcalf', step_jack: 'stepjack', high_knee: 'highknee', jumping_jack: 'jack', mountain: 'mountain', rope: 'rope', burpee: 'burpee'
+  hang_knee: 'hangknee', single_leg_stand: 'balance', calf_raise: 'calf', db_calf: 'dbcalf', step_jack: 'stepjack', high_knee: 'highknee', jumping_jack: 'jack', mountain: 'mountain', rope: 'rope', burpee: 'burpee'
 };
 
 // 呼吸：力を出す動き（持ち上げる・押す・引く・立つ）で吐き、戻す動き（下ろす・しゃがむ）で吸う。キープ中は止めずに続ける
@@ -1505,6 +1513,20 @@ function lastLog(id) {
   return '';
 }
 
+// クールダウン：その日に使った部位を、反動をつけずに10〜30秒ずつのばす（ACSM）
+const STRETCH = {
+  legs: [['もも裏：座って片脚をのばし、つま先へ手をのばす', '左右30秒'], ['太もも前：立って足首を持ち、かかとをお尻へ', '左右30秒'], ['お尻：あお向けで片膝を胸へ抱える', '左右30秒']],
+  push: [['胸：壁に手をついて、体を反対側へひらく', '左右30秒'], ['肩の前：手を後ろで組んで胸をはる', '20秒']],
+  pull: [['背中：両腕を前にのばして背中を丸める', '30秒'], ['わき：片腕を頭の上で反対へ引く', '左右20秒']],
+  core: [['体のねじり：あお向けで両膝を左右へ倒す', '左右20秒']],
+  cardio: [['ふくらはぎ：壁を押して、後ろ足のかかとを床へ', '左右30秒']]
+};
+function cooldownHTML(h) {
+  const gs = [...new Set(h.items.map(it => PGROUP[(EXM[it.id] || {}).p]).filter(Boolean))];
+  const list = gs.flatMap(g => STRETCH[g] || []).slice(0, 4); if (!list.length) return '';
+  return `<section class="card" style="text-align:left"><h2>クールダウン</h2><p class="muted small">使った部位を、反動をつけずにじんわりのばしましょう。痛みが出るところまではのばしません。</p>
+    <ul class="warm">${list.map(w => `<li><span>${w[0]}</span><span class="muted num">${w[1]}</span></li>`).join('')}</ul></section>`;
+}
 function vResult() {
   const r = S.lastResult, h = S.history[r.idx], p = S.profile;
   const m = Math.max(1, Math.round(h.dur / 60));
@@ -1517,6 +1539,7 @@ function vResult() {
     ${rpgWin(r)}
     <p class="small"><b>${esc(p.cat.name)}のなかよし度 +${r.xp}</b>${r.up ? ` · <span class="pill paw">Lv.${bondLv(S.xp)}「${BOND[bondLv(S.xp) - 1][1]}」になった！</span>` : ''}${r.unlock ? `<br>なかよしのしるしに「${r.unlock}」をもらいました（ステータス → そうび）` : ''}</p>
     ${r.notes.length ? `<section style="display:flex;flex-direction:column;gap:8px;text-align:left"><h2>次回に向けて</h2><ul class="notes">${r.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></section>` : ''}
+    ${cooldownHTML(h)}
     <section class="card" style="text-align:left"><h2>今日のきつさは？</h2><p class="muted small">次回の量の調整に使います。</p>
       <div class="rpe">${[['hard', 'きつかった'], ['ok', 'ちょうどいい'], ['easy', '余裕']].map(([k, l]) => `<button class="chip" data-act="rpe" data-v="${k}" aria-pressed="${h.rpe === k}">${l}</button>`).join('')}</div></section>
     <button class="btn primary" data-act="tab" data-v="home">ホームへ</button>
@@ -1963,7 +1986,7 @@ const A = {
     try {
       const o = JSON.parse($('#backup').value.trim());
       if (!o || o.v !== 1 || !o.profile || !o.program) throw 0;
-      confirmBox('今のデータを上書きして読み込みますか？', '読み込む', () => { S = Object.assign(fresh(), o); backupText = ''; save(); toast('読み込みました'); go('home'); });
+      confirmBox('今のデータを上書きして読み込みますか？', '読み込む', () => { S = Object.assign(fresh(), o); migrate(); backupText = ''; save(); toast('読み込みました'); go('home'); });
     } catch (e) { toast('データの形式が正しくありません。コピーした文字を全部貼りつけてください'); }
   },
   reset: () => confirmBox('記録・メニュー・猫のなかよし度がすべて消えます。元には戻せません。', '消す', () => { S = fresh(); save(); draft = null; step = 0; editing = false; go('onboard'); }),
@@ -2016,6 +2039,17 @@ document.addEventListener('input', e => {
   }
 });
 
-if (S.profile && S.program && S.program.ver !== PROGRAM_VER && !S.session) { S.program = buildProgram(S.profile); S.programNote = 1; save(); }
+// 古い版のデータを今の形にそろえる（起動時と、データの読みこみ時）
+function migrate() {
+  if (S.profile && S.profile.cat.name === 'ムギ') S.profile.cat.name = 'にゃんだ';
+  if (S.profile && S.profile.cat.coat) delete S.profile.cat.coat;
+  if (S.acc) { const m = { collar: 'collar', band: 'band', glasses: 'glasses', crown: 'crown' }[S.acc]; if (m) { if (!S.items.includes(m)) S.items.push(m); S.equip[GEARM[m].slot] = m; } delete S.acc; }
+  S.items = S.items.filter(id => GEARM[id]);
+  for (const k in S.equip) if (!GEARM[S.equip[k]]) delete S.equip[k];
+  if (S.profile) giftBond();
+  if (S.profile && S.program && S.program.ver !== PROGRAM_VER && !S.session) { S.program = buildProgram(S.profile); S.programNote = 1; }
+  save();
+}
+migrate();
 render();
 </script>

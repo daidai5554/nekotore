@@ -39,7 +39,7 @@ for (let n = 0; n < N; n++) {
       if ((e.req || []).some(r => r.includes('barbell')) && it.rest < 90) fail('バーベル種目の休憩が短い', `${tag} ${e.n} ${it.rest}秒`);
       week.add(GROUP[e.p]);
     });
-    const rank = e => e.p === 'cardio' ? 3 : e.p === 'core' ? 2 : 0;
+    const rank = e => e.p === 'cardio' ? 3 : e.p === 'core' || e.p === 'balance' ? 2 : 0;
     const rs = d.items.map(it => rank(EXM[it.id])); if (rs.some((r, i) => i && r < rs[i - 1])) fail('順番（体幹・有酸素が先に来る）', `${tag} DAY${di + 1}: ${d.items.map(it => EXM[it.id].n).join('→')}`);
     if (p.goal === 'posture' && !d.items.some(it => ['posture', 'pull_h', 'pull_v'].includes(EXM[it.id].p))) fail('姿勢目標なのに背中の種目がない日', `${tag} DAY${di + 1}`);
   });
@@ -47,6 +47,7 @@ for (let n = 0; n < N; n++) {
   const sig = prog.days.filter(d => d.type === 'full').map(d => d.items.map(i => i.id).sort().join(','));
   if (p.equipment.length >= 2 && p.minutes >= 20 && new Set(sig).size < sig.length) dup++;
   if (p.minutes >= 20) for (const g of ['legs', 'push', 'pull', 'core']) if (!week.has(g)) fail(`1週間で${g}の種目がない`, tag);
+  if (p.age >= 60 && !prog.days.some(d => d.items.some(it => EXM[it.id].p === 'balance'))) fail('60歳以上なのにバランス運動がない', tag);
   if (p.goal === 'diet' && p.minutes >= 20 && !prog.days.some(d => d.items.some(it => EXM[it.id].p === 'cardio'))) fail('減量目標なのに有酸素がない', tag);
 }
 over.sort((a, b) => a - b);
