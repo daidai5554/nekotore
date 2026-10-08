@@ -14,7 +14,7 @@ const CONTRA = {
   shoulder: ['pullup', 'neg_pullup', 'dead_hang', 'pike_pushup', 'db_press', 'band_ohp', 'bench_dip', 'bb_bench', 'decline_pushup', 'hang_knee'],
   wrist: ['pushup', 'knee_pushup', 'diamond', 'decline_pushup', 'pike_pushup', 'mountain', 'burpee', 'bench_dip']
 };
-const N = 3000; const over = [];
+const N = 3000; const over = []; let dup = 0;
 for (let n = 0; n < N; n++) {
   const p = { name: 'x', sex: pick(['male', 'female', 'none']), age: 15 + Math.floor(rnd() * 70), height: 145 + Math.floor(rnd() * 50), weight: 40 + Math.floor(rnd() * 80),
     goal: pick(GOALS)[0], level: pick(LEVELS)[0], equipment: sub(EQUIP.map(e => e[0])), limits: sub(LIMITS.map(l => l[0])), days: 2 + Math.floor(rnd() * 5), minutes: pick([10, 20, 30, 45, 60]), cat: { name: 'n', per: 'gentle' } };
@@ -42,10 +42,15 @@ for (let n = 0; n < N; n++) {
     const rs = d.items.map(it => rank(EXM[it.id])); if (rs.some((r, i) => i && r < rs[i - 1])) fail('順番（体幹・有酸素が先に来る）', `${tag} DAY${di + 1}: ${d.items.map(it => EXM[it.id].n).join('→')}`);
     if (p.goal === 'posture' && !d.items.some(it => ['posture', 'pull_h', 'pull_v'].includes(EXM[it.id].p))) fail('姿勢目標なのに背中の種目がない日', `${tag} DAY${di + 1}`);
   });
+  // 「全身トレ×3パターン」の説明どおり、全身の日どうしはまったく同じメニューにしない（分割法で同じ日を週2回くり返すのは一般的なので対象外）
+  const sig = prog.days.filter(d => d.type === 'full').map(d => d.items.map(i => i.id).sort().join(','));
+  if (p.equipment.length >= 2 && p.minutes >= 20 && new Set(sig).size < sig.length) dup++;
   if (p.minutes >= 20) for (const g of ['legs', 'push', 'pull', 'core']) if (!week.has(g)) fail(`1週間で${g}の種目がない`, tag);
   if (p.goal === 'diet' && p.minutes >= 20 && !prog.days.some(d => d.items.some(it => EXM[it.id].p === 'cardio'))) fail('減量目標なのに有酸素がない', tag);
 }
 over.sort((a, b) => a - b);
+console.log(`全身の日が同じ内容になるメニュー: ${(dup / N * 100).toFixed(1)}%`);
+if (dup / N > .01) fail('全身の日に同じ内容が多い', `${dup}件 / ${N}`);
 const q = f => over[Math.floor(over.length * f)].toFixed(2);
 console.log(`${N}人分のメニューを検査。所要時間/指定時間: 中央値 ${q(.5)}  90% ${q(.9)}  最大 ${over[over.length - 1].toFixed(2)}`);
 const keys = Object.keys(fails);
