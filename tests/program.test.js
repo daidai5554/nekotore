@@ -34,6 +34,7 @@ for (let n = 0; n < N; n++) {
       if (e.impact && !allowImpact(p)) fail('衝撃のある種目', `${tag} ${e.n}`);
       p.limits.forEach(l => { if (CONTRA[l].includes(e.id)) fail(`痛み(${l})のある人に禁止種目`, `${tag} ${e.n}`); });
       if (p.level === 'beginner' && e.lv >= 3) fail('初心者に上級種目', `${tag} ${e.n}`);
+      if (!e.w && (app.bmi(p) >= 30 || p.age >= 65) && p.level !== 'advanced' && e.lv >= 3) fail('体重が重め・高齢の人に上級の自重種目', `${tag} ${e.n}`);
       if (it.rest < 20 || it.rest > 180) fail('休憩時間が範囲外', `${tag} ${e.n} ${it.rest}秒`);
       week.add(GROUP[e.p]);
     });

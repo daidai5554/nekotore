@@ -613,11 +613,13 @@ const canUse = (e, p) => (e.req || []).every(g => g.some(q => p.equipment.includ
 function candidates(slot, p, used) {
   const grp = GROUPS[slot] || [slot];
   const maxLv = lvIdx(p) + 1;
+  // 自重の種目は体重を支える負担が大きいので、体重が重め（BMI30以上）・65歳以上なら1段階やさしいものから選ぶ
+  const bwLv = Math.max(1, maxLv - (bmi(p) >= 30 || p.age >= 65 ? 1 : 0)), lvCap = e => e.w ? maxLv : bwLv;
   const ok = e => grp.includes(e.p) && canUse(e, p) && !used.has(e.id);
-  let list = EX.filter(e => ok(e) && e.lv <= maxLv);
+  let list = EX.filter(e => ok(e) && e.lv <= lvCap(e));
   // 条件に合う種目がないときだけ1段階上まで広げる（初心者に上級種目は出さない）
-  if (!list.length) list = EX.filter(e => ok(e) && e.lv <= Math.min(maxLv + 1, p.level === 'beginner' ? 2 : 3));
-  const score = e => -grp.indexOf(e.p) * 2 - Math.abs(e.lv - maxLv) * .8 + (e.w ? 1 : 0) + (e.pri || 0)
+  if (!list.length) list = EX.filter(e => ok(e) && e.lv <= Math.min(lvCap(e) + (lvCap(e) < maxLv ? 0 : 1), p.level === 'beginner' ? 2 : 3));
+  const score = e => -grp.indexOf(e.p) * 2 - Math.abs(e.lv - lvCap(e)) * .8 + (e.w ? 1 : 0) + (e.pri || 0)
     + (p.goal === 'muscle' ? (e.w ? .8 : 0) - (e.impact ? .8 : 0) - (e.unit === 'sec' && e.p !== 'core' ? .6 : 0) : 0);
   return list.map(e => ({ e, s: score(e) })).sort((a, b) => b.s - a.s);
 }
@@ -1714,8 +1716,11 @@ function startSession(mini) {
   const di = nextDayIdx(), day = S.program.days[di];
   let items = day.items;
   if (mini) {
+    // 5分だけモード：下半身1つ＋上半身1つ（なければ体幹）を、準備のいらない種目から選ぶ
     const easy = [...items].sort((a, b) => (EXM[a.id].w ? 1 : 0) - (EXM[b.id].w ? 1 : 0));
-    items = easy.slice(0, 2);
+    const grp = it => PGROUP[EXM[it.id].p], legs = easy.find(it => grp(it) === 'legs'), upper = easy.find(it => ['push', 'pull'].includes(grp(it))) || easy.find(it => grp(it) === 'core');
+    items = [legs, upper].filter(Boolean);
+    for (const it of easy) { if (items.length >= 2) break; if (!items.includes(it)) items.push(it); }
   }
   const sItems = items.map(it => sessItem(it, mini)), pl = player(), stl = Object.fromEntries(STATS.map(([k]) => [k, pl.st[k].L]));
   const m = pickMonster(mini, S.history.filter(h => !h.mini).length + 1, pl.lv.L);
