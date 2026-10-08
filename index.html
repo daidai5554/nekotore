@@ -640,6 +640,8 @@ function makeItem(e, slot, p) {
   const iso = isIso(e), heavy = (e.req || []).some(r => r.includes('barbell'));
   let rest = { muscle: heavy ? 150 : iso ? 60 : 90, diet: iso ? 30 : 45, health: iso ? 45 : 60, posture: iso ? 45 : 60 }[g] + (p.age >= 60 ? 15 : 0);
   if (['cardio', 'core'].includes(e.p)) rest = Math.min(rest, 45);
+  // バーベルの重い種目（スクワット・デッドリフトなど）は目的にかかわらず90秒以上休む（NSCA：高重量は2分以上が目安）
+  if (heavy) rest = Math.max(rest, g === 'muscle' ? 150 : 90);
   const it = { id: e.id, slot, sets, rest };
   if (e.unit === 'sec') it.sec = e.id === 'dead_hang' ? [15, 20, 30][L] : e.p === 'cardio' ? [20, 30, 40][L] : [20, 30, 45][L];
   else {
@@ -708,7 +710,7 @@ const daySec = (items, p) => (p.minutes <= 10 ? 120 : 180) + items.reduce((a, it
 const PGROUP = { squat: 'legs', lunge: 'legs', hinge: 'legs', glute: 'legs', calf: 'legs', push_h: 'push', push_v: 'push', tri: 'push', pull_v: 'pull', pull_h: 'pull', posture: 'pull', bi: 'pull', core: 'core', cardio: 'cardio' };
 // 時間に収める：①4セット→3セット ②3セット→2セット ③休憩を15秒ずつ短く（下限あり）
 function fitTime(items, p) {
-  const budget = p.minutes * 60, floor = it => p.goal === 'muscle' ? ((EXM[it.id].req || []).some(r => r.includes('barbell')) ? 90 : 45) : 30;
+  const budget = p.minutes * 60, floor = it => (EXM[it.id].req || []).some(r => r.includes('barbell')) ? 90 : p.goal === 'muscle' ? 45 : 30;
   // 優先度の低い（後ろの）種目からセット数を減らし、メインの種目のセット数を守る
   for (const cap of [3, 2]) for (const it of [...items].reverse()) { if (daySec(items, p) <= budget) return; if (it.sets > cap) it.sets = cap; }
   let changed = true;

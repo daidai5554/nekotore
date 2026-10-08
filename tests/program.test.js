@@ -36,6 +36,7 @@ for (let n = 0; n < N; n++) {
       if (p.level === 'beginner' && e.lv >= 3) fail('初心者に上級種目', `${tag} ${e.n}`);
       if (!e.w && (app.bmi(p) >= 30 || p.age >= 65) && p.level !== 'advanced' && e.lv >= 3) fail('体重が重め・高齢の人に上級の自重種目', `${tag} ${e.n}`);
       if (it.rest < 20 || it.rest > 180) fail('休憩時間が範囲外', `${tag} ${e.n} ${it.rest}秒`);
+      if ((e.req || []).some(r => r.includes('barbell')) && it.rest < 90) fail('バーベル種目の休憩が短い', `${tag} ${e.n} ${it.rest}秒`);
       week.add(GROUP[e.p]);
     });
     const rank = e => e.p === 'cardio' ? 3 : e.p === 'core' ? 2 : 0;
