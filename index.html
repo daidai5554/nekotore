@@ -677,10 +677,11 @@ function roundW(e, w) {
   if (kb) return Math.max(4, Math.round(w / 2) * 2);
   return Math.max(1, Math.round(w));
 }
-function startW(e, p = S.profile) {
+// reps：目標回数の真ん中。表の値は12回できる重さなので、Epley 式（1RM = 重さ×(1+回数/30)）で目標回数に合わせる
+function startW(e, p = S.profile, reps = 12) {
   const f = START_W[e.id]; if (!f) return '';
   const bw = Math.min(p.weight, 25 * (p.height / 100) ** 2);   // 体脂肪の多い人は、身長に対する標準体重までで計算
-  const k = (p.sex === 'female' ? .65 : 1) * [1, 1.3, 1.6][lvIdx(p)] * (p.age >= 60 ? .8 : 1);
+  const k = (p.sex === 'female' ? .65 : 1) * [1, 1.3, 1.6][lvIdx(p)] * (p.age >= 60 ? .8 : 1) * (1 + 12 / 30) / (1 + reps / 30);
   return roundW(e, bw * f * k);
 }
 const minItems = p => p.minutes <= 10 ? 2 : 3;
@@ -1665,7 +1666,7 @@ function sessItem(it, mini) {
   const sets = mini ? 2 : clamp(it.sets + S.volAdj, 1, 5);
   const loT = it.lo != null ? it.lo + (pr.extra || 0) : null, hiT = it.hi != null ? it.hi + (pr.extra || 0) : null;
   const secT = it.sec ? it.sec + (pr.sec || 0) : null;
-  const guess = e.w && pr.w == null ? startW(e) : '';
+  const guess = e.w && pr.w == null ? startW(e, S.profile, (loT + hiT) / 2) : '';
   // 回数の初期値は「前回のそのセットの回数（なければ目標の下限）」。押すだけで実際以上の記録にならないようにする
   const prev = lastSets(it.id);
   return { ...it, sets, loT, hiT, secT, guess, log: Array.from({ length: sets }, (_, j) => ({ w: e.w ? (pr.w ?? guess) : '', r: secT || (prev[j] ? clamp(prev[j], loT, hiT) : loT), done: false })) };
@@ -1680,7 +1681,8 @@ function startSession(mini) {
   const sItems = items.map(it => sessItem(it, mini)), pl = player(), stl = Object.fromEntries(STATS.map(([k]) => [k, pl.st[k].L]));
   const m = pickMonster(mini, S.history.filter(h => !h.mini).length + 1, pl.lv.L);
   const expd = sItems.reduce((a, it) => a + it.log.reduce((b, l) => b + dmgOf(EXM[it.id], +l.r || 0, +l.w || 0, stl[P2S[EXM[it.id].p] || 'core'], false), 0), 0);
-  const max = Math.max(10, Math.round(expd * (m.boss ? 1 : .85)));
+  // 体力は「表示どおりの回数で全セットこなす」と倒せる量。疲れで少し減っても勝てるよう、通常8割・ボス9割にする
+  const max = Math.max(10, Math.round(expd * (m.boss ? .9 : .8)));
   S.session = { start: Date.now(), di, mini, label: mini ? '5分だけモード' : `DAY ${di + 1} ${day.label}`, cur: mini ? 0 : -1, items: sItems,
     battle: { m, max, hp: max, msg: `${m.boss ? 'ボスの ' : ''}${m.n}が あらわれた！`, idle: catIdle(), hit: 0, last: 0, won: false, stl } };
   sessMsg = mini ? say('mini') : say('start');
@@ -1719,14 +1721,22 @@ function finishSession() {
     if (!done.length) return;
     const pr = S.prog[it.id] = { ...(S.prog[it.id] || {}) };
     if (e.w) { const mw = Math.max(...done.map(l => +l.w || 0)); if (mw > 0) pr.w = mw; }
-    const full = done.length >= it.sets && done.every(l => +l.r >= (it.secT || it.hiT));
+    // ダブルプログレッション：1セット目で上限に届き、2セット目以降は疲れで1回（秒なら5秒）少なくてもOK
+    const top = it.secT || it.hiT, tol = it.secT ? 5 : 1;
+    const full = done.length >= it.sets && +done[0].r >= top && done.every(l => +l.r >= top - tol);
     if (e.w && pr.w > 0) {
       const failed = done.length >= it.sets && done.every(l => +l.r < it.loT);
       pr.miss = failed ? (pr.miss || 0) + 1 : full ? 0 : (pr.miss || 0);
       if (pr.miss >= 2) { pr.w = roundW(e, pr.w * .9); pr.miss = 0; notes.push(`${e.n}：2回続けて目標に届かなかったので、次回は ${pr.w}kg に下げて立て直すにゃ`); return; }
     }
     if (!full) return;
-    if (e.w) { if (pr.w > 0) { pr.w = roundW(e, pr.w + (e.step || 1)); pr.extra = 0; notes.push(`${e.n}：次回は ${pr.w}kg に挑戦`); } return; }
+    if (e.w) {
+      if (!(pr.w > 0)) return;
+      const nw = roundW(e, pr.w + (e.step || 1));
+      // 軽い重さで1段階が1割を超えるときは、先に回数を2回のばしてから重さを上げる
+      if ((nw - pr.w) / pr.w > .1 && (pr.extra || 0) < 2) { pr.extra = (pr.extra || 0) + 2; notes.push(`${e.n}：次回は同じ ${pr.w}kg で目標 +2回（そのあと重さを上げます）`); return; }
+      pr.w = nw; pr.extra = 0; notes.push(`${e.n}：次回は ${pr.w}kg に挑戦`); return;
+    }
     const nx = e.next && EXM[e.next];
     if (nx && canUse(nx, p) && !S.program.days.some(d => d.items.some(x => x.id === nx.id))) {
       S.program.days.forEach(d => d.items.forEach((x, k) => { if (x.id === it.id) { const ni = makeItem(nx, x.slot, p); ni.sets = x.sets; d.items[k] = ni; } }));
