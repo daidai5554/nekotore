@@ -170,14 +170,18 @@ p{margin:0}
 .target{font-size:15px;font-weight:700}
 .prev{font-size:13px;color:var(--muted)}
 .sets{display:flex;flex-direction:column;gap:8px}
-.set{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:8px 10px}
+.set{display:grid;grid-template-columns:20px 1fr auto;gap:6px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:8px 10px}
 .set.done{border-color:var(--ok)}
 .set .no{font-family:var(--f-num);font-weight:600;color:var(--muted);text-align:center}
-.set .vals{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
-.set .vals input{width:64px;min-height:42px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);text-align:center;font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
+.set .vals{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
+.set .vals input{width:54px;min-height:42px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);text-align:center;font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
 .set .vals span{font-size:13px;color:var(--muted)}
+.stepper{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.stepper input{border:0!important;border-radius:0!important;width:40px!important}
+.set .vals .u{font-size:12px}
+.stp{width:30px;min-height:42px;border:0;background:var(--surface-2);font-size:18px;font-weight:700;color:var(--ink)}
 .set .acts{display:flex;gap:6px}
-.chk{width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.chk{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center}
 .chk svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .set.done .chk{background:var(--ok);border-color:var(--ok)}
 .set.done .chk svg{stroke:var(--surface)}
@@ -402,7 +406,7 @@ const EX = [
   // squat
   { id: 'chair_squat', n: '椅子スクワット', p: 'squat', lv: 1, req: [['chair', 'bench']], next: 'bw_squat', how: ['椅子の前に立ち、足は肩幅', 'お尻を後ろに引き、座る直前で止めて立ち上がる'], cue: '膝とつま先は同じ向きにゃ' },
   { id: 'wall_sit', n: 'ウォールシット', p: 'squat', lv: 1, unit: 'sec', how: ['壁に背中をつけて腰を落とし、空気イスの姿勢をキープ', '膝が痛いときは角度を浅くする'], cue: '呼吸は止めないにゃ' },
-  { id: 'bw_squat', n: 'スクワット', p: 'squat', lv: 1, avoid: ['knee'], pri: .3, how: ['足を肩幅に開き、胸を張る', '太ももが床と平行になるまでしゃがんで立つ'], cue: 'かかとに体重をのせるにゃ' },
+  { id: 'bw_squat', n: 'スクワット', p: 'squat', lv: 1, avoid: ['knee'], pri: .3, next: 'split_squat', how: ['足を肩幅に開き、胸を張る', '太ももが床と平行になるまでしゃがんで立つ'], cue: 'かかとに体重をのせるにゃ' },
   { id: 'goblet_squat', n: 'ゴブレットスクワット', p: 'squat', lv: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 2, avoid: ['knee'], how: ['ダンベルを胸の前で縦に持つ', '胸を張ったまま深くしゃがみ、立ち上がる'], cue: 'ひじを膝の内側に通すイメージにゃ' },
   { id: 'bb_squat', n: 'バーベルスクワット', p: 'squat', lv: 2, req: [['barbell']], w: 1, step: 2.5, r: [6, 10], avoid: ['knee', 'back'], how: ['ラックでバーを肩にかつぐ', 'セーフティバーを必ずセットしてしゃがむ'], cue: 'セーフティは命綱にゃ' },
   { id: 'jump_squat', n: 'ジャンプスクワット', p: 'squat', lv: 2, impact: 1, avoid: ['knee'], r: [8, 12], how: ['軽くしゃがんでから真上にジャンプ', 'つま先から静かに着地する'], cue: '着地は猫みたいに静かににゃ' },
@@ -410,7 +414,7 @@ const EX = [
   // hinge
   { id: 'glute_bridge', n: 'ヒップリフト', p: 'hinge', lv: 1, next: 'single_bridge', how: ['あお向けで膝を立てる', 'お尻を持ち上げ、肩から膝を一直線にする'], cue: '上で1秒お尻をしめるにゃ' },
   { id: 'single_bridge', n: '片脚ヒップリフト', p: 'hinge', lv: 2, side: 1, how: ['ヒップリフトの姿勢から片脚をのばす', '片脚でお尻を持ち上げる'], cue: '腰をそりすぎないにゃ' },
-  { id: 'superman', n: 'スーパーマン', p: 'hinge', lv: 1, how: ['うつ伏せで両手を前にのばす', '手と脚を少し浮かせて2秒止める'], cue: '高く上げなくていいにゃ' },
+  { id: 'superman', n: 'スーパーマン', p: 'hinge', lv: 1, avoid: ['back'], how: ['うつ伏せで両手を前にのばす', '手と脚を少し浮かせて2秒止める'], cue: '高く上げなくていいにゃ' },
   { id: 'db_rdl', n: 'ダンベルルーマニアンデッドリフト', p: 'hinge', lv: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 2, avoid: ['back'], how: ['ダンベルを持ち、膝を軽くゆるめる', '背中をまっすぐにしたままお尻を引いて上体を倒す'], cue: 'もも裏がのびるのを感じるにゃ' },
   { id: 'kb_swing', n: 'ケトルベルスイング', p: 'hinge', lv: 2, req: [['kettlebell']], w: 1, step: 4, r: [12, 20], avoid: ['back'], how: ['股の間にケトルベルを引き、お尻で前へ押し出す', '腕ではなく腰の伸びで胸の高さまで振る'], cue: 'お尻でパンッにゃ' },
   { id: 'bb_dl', n: 'バーベルデッドリフト', p: 'hinge', lv: 2, req: [['barbell']], w: 1, step: 5, r: [5, 8], avoid: ['back'], how: ['バーを足の中央の上に置き、背中をまっすぐにして握る', '床を押すように立ち上がる'], cue: '背中が丸まったら即中止にゃ' },
@@ -439,9 +443,9 @@ const EX = [
   { id: 'band_ohp', n: 'チューブショルダープレス', p: 'push_v', lv: 1, req: [['band']], avoid: ['shoulder'], how: ['チューブを足で踏み、肩の高さで持つ', '頭の上へ押し上げる'], cue: 'ゆっくり戻すにゃ' },
   { id: 'db_lateral', n: 'サイドレイズ', p: 'push_v', lv: 1, req: [['dumbbell']], w: 1, step: 1, r: [12, 15], how: ['軽いダンベルを体の横に持つ', '肩の高さまで横に上げる'], cue: '軽い重さで十分にゃ' },
   // pull
-  { id: 'pullup', n: '懸垂', p: 'pull_v', lv: 3, req: [['pullup']], r: [3, 8], how: ['肩幅より広くバーを握ってぶら下がる', '胸をバーに近づけるように体を引き上げる'], cue: '反動は使わないにゃ' },
-  { id: 'neg_pullup', n: 'ネガティブ懸垂', p: 'pull_v', lv: 2, req: [['pullup']], r: [3, 6], next: 'pullup', how: ['台を使ってあごがバーの上にある姿勢になる', '3〜5秒かけてゆっくり下りる'], cue: 'ゆっくりが一番効くにゃ' },
-  { id: 'dead_hang', n: 'ぶら下がり', p: 'pull_v', lv: 1, req: [['pullup']], unit: 'sec', next: 'neg_pullup', how: ['バーを握ってぶら下がる', '肩をすくめず、軽く胸を張る'], cue: '握力もきたえられるにゃ' },
+  { id: 'pullup', n: '懸垂', p: 'pull_v', lv: 3, req: [['pullup']], r: [3, 8], avoid: ['shoulder'], how: ['肩幅より広くバーを握ってぶら下がる', '胸をバーに近づけるように体を引き上げる'], cue: '反動は使わないにゃ' },
+  { id: 'neg_pullup', n: 'ネガティブ懸垂', p: 'pull_v', lv: 2, req: [['pullup']], r: [3, 6], next: 'pullup', avoid: ['shoulder'], how: ['台を使ってあごがバーの上にある姿勢になる', '3〜5秒かけてゆっくり下りる'], cue: 'ゆっくりが一番効くにゃ' },
+  { id: 'dead_hang', n: 'ぶら下がり', p: 'pull_v', lv: 1, req: [['pullup']], unit: 'sec', next: 'neg_pullup', avoid: ['shoulder'], how: ['バーを握ってぶら下がる', '肩をすくめず、軽く胸を張る'], cue: '握力もきたえられるにゃ' },
   { id: 'band_pulldown', n: 'チューブラットプルダウン', p: 'pull_v', lv: 1, req: [['band']], how: ['チューブをドアの上などに固定する', 'ひじを脇腹へ引き下ろす'], cue: '肩甲骨を下げるにゃ' },
   { id: 'db_row', n: 'ワンハンドダンベルロウ', p: 'pull_h', lv: 1, side: 1, req: [['dumbbell', 'kettlebell']], w: 1, step: 1, how: ['片手と片膝を椅子やベンチにつく', 'ダンベルを腰のほうへ引き上げる'], cue: 'ひじを天井へ引くにゃ' },
   { id: 'band_row', n: 'チューブロウ', p: 'pull_h', lv: 1, req: [['band']], how: ['座って足裏にチューブをかける', 'ひじを後ろへ引いて肩甲骨を寄せる'], cue: '胸を張ったままにゃ' },
@@ -461,11 +465,11 @@ const EX = [
   { id: 'dead_bug', n: 'デッドバグ', p: 'core', lv: 1, r: [8, 12], pri: .2, how: ['あお向けで手足を天井へ上げる', '腰を床につけたまま、反対の手足をのばす（左右で1回）'], cue: '腰にやさしい腹筋にゃ' },
   { id: 'plank', n: 'プランク', p: 'core', lv: 1, unit: 'sec', how: ['ひじとつま先で体を支える', '頭からかかとまで一直線をキープ'], cue: 'お尻を上げすぎないにゃ' },
   { id: 'bird_dog', n: 'バードドッグ', p: 'core', lv: 1, side: 1, how: ['四つんばいになる', '反対の手と脚をまっすぐのばして2秒止める'], cue: 'ぐらぐらしないようににゃ' },
-  { id: 'crunch', n: 'クランチ', p: 'core', lv: 1, r: [12, 20], how: ['あお向けで膝を立てる', 'おへそをのぞきこむように肩を浮かせる'], cue: '首は引っぱらないにゃ' },
+  { id: 'crunch', n: 'クランチ', p: 'core', lv: 1, r: [12, 20], avoid: ['back'], how: ['あお向けで膝を立てる', 'おへそをのぞきこむように肩を浮かせる'], cue: '首は引っぱらないにゃ' },
   { id: 'side_plank', n: 'サイドプランク', p: 'core', lv: 2, unit: 'sec', side: 1, how: ['横向きでひじをつき、体を浮かせる', '体を一直線にキープ'], cue: 'わき腹がしまるにゃ' },
   { id: 'leg_raise', n: 'レッグレイズ', p: 'core', lv: 2, avoid: ['back'], how: ['あお向けで脚をそろえる', '脚を上げ下げし、床につく直前で止める'], cue: '腰が浮いたら膝を曲げるにゃ' },
   { id: 'ab_roll', n: '膝コロ（腹筋ローラー）', p: 'core', lv: 2, req: [['abroller']], r: [6, 12], avoid: ['back'], how: ['膝をついてローラーを握る', '腰をそらさない範囲で前へ転がして戻る'], cue: '無理に遠くまで行かないにゃ' },
-  { id: 'hang_knee', n: 'ハンギングニーレイズ', p: 'core', lv: 2, req: [['pullup']], how: ['バーにぶら下がる', '膝を胸のほうへ引き上げる'], cue: '体をゆらさないにゃ' },
+  { id: 'hang_knee', n: 'ハンギングニーレイズ', p: 'core', lv: 2, req: [['pullup']], avoid: ['shoulder', 'back'], how: ['バーにぶら下がる', '膝を胸のほうへ引き上げる'], cue: '体をゆらさないにゃ' },
   // calf
   { id: 'calf_raise', n: 'カーフレイズ', p: 'calf', lv: 1, r: [15, 20], how: ['壁に手をついて立つ', 'かかとを上げ下げする'], cue: '第二の心臓をきたえるにゃ' },
   { id: 'db_calf', n: 'ダンベルカーフレイズ', p: 'calf', lv: 1, req: [['dumbbell']], w: 1, step: 2, r: [12, 20], how: ['ダンベルを持って立つ', 'かかとを高く上げ下げする'], cue: '上で1秒止めるにゃ' },
@@ -756,8 +760,9 @@ function buildProgram(p) {
   if (!allowImpact(p)) R.push('関節を守るため、ジャンプなど着地の衝撃がある種目は除外しています。');
   if (p.age >= 60) R.push('年齢に合わせてセット数を控えめに、休憩を長めにしています。');
   R.push(`1回あたり約${p.minutes}分に収まる種目数にしています。`);
-  const pr = p.goal === 'muscle' ? [1.6, 2.0] : [1.2, 1.6];
-  R.push(`たんぱく質の目安：1日 ${Math.round(p.weight * pr[0])}〜${Math.round(p.weight * pr[1])}g（体重×${pr[0]}〜${pr[1]}g）。持病のある方は医師の指示を優先してください。`);
+  // たんぱく質：運動する成人は体重1kgあたり1.4〜2.0g（国際スポーツ栄養学会 2017）。筋肉をつけるなら2.2gまで、健康目的は1.2g〜
+  const pr = p.goal === 'muscle' ? [1.6, 2.2] : p.goal === 'diet' ? [1.4, 2.0] : [1.2, 1.6], bwP = Math.min(p.weight, 25 * (p.height / 100) ** 2);
+  R.push(`たんぱく質の目安：1日 ${Math.round(bwP * pr[0])}〜${Math.round(bwP * pr[1])}g（体重1kgあたり${pr[0]}〜${pr[1]}g${bwP < p.weight ? '。標準体重で計算' : ''}）。腎臓などに持病のある方は医師の指示を優先してください。`);
   return { days, reasons: R, created: Date.now() };
 }
 const nextDayIdx = () => S.rot % S.program.days.length;
@@ -1229,6 +1234,30 @@ function vTabs() {
   return `<div class="tabs"><nav>${t.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${view === k || (k === 'status' && view === 'equip') ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24">${ICON[k]}</svg>${l}</button>`).join('')}</nav></div>`;
 }
 
+// 回復：同じ部位は48時間ほどあける（ACSM）。次のメニューが前回と同じ部位を含み、まだ44時間たっていなければ案内する
+function recoveryNote() {
+  const last = S.history.filter(h => !h.mini).slice(-1)[0]; if (!last || !S.program) return '';
+  const hrs = (Date.now() - last.ts) / 36e5; if (hrs >= 44) return '';
+  const NAME = { legs: '脚', push: '胸・肩', pull: '背中' }, g = id => PGROUP[(EXM[id] || {}).p];
+  const lastG = new Set(last.items.map(it => g(it.id))), same = [...new Set(S.program.days[nextDayIdx()].items.map(it => g(it.id)))].filter(x => NAME[x] && lastG.has(x));
+  if (!same.length) return '';
+  return `前回（${Math.max(1, Math.round(hrs))}時間前）と同じ部位（${same.map(x => NAME[x]).join('・')}）が続きます。筋肉の回復には48時間ほどかかるので、今日は休むか「5分だけ」がおすすめです。`;
+}
+// 体重の変化ペース：直近4週間の記録から1週間あたりの変化を求める（最小二乗法）
+function weightTrend() {
+  const W = S.weights.filter(w => Date.now() - new Date(w.d).getTime() < 28 * 864e5);
+  if (W.length < 3) return '';
+  const xs = W.map(w => new Date(w.d).getTime() / 864e5), span = Math.max(...xs) - Math.min(...xs); if (span < 7) return '';
+  const mx = xs.reduce((a, b) => a + b) / xs.length, my = W.reduce((a, w) => a + w.kg, 0) / W.length;
+  const slope = xs.reduce((a, x, i) => a + (x - mx) * (W[i].kg - my), 0) / xs.reduce((a, x) => a + (x - mx) ** 2, 0) * 7;
+  const cur = W[W.length - 1].kg, pct = slope / cur * 100, sign = v => (v > 0 ? '+' : '') + v.toFixed(Math.abs(v) < 1 ? 2 : 1);
+  let msg = `直近の変化：1週間あたり <b class="num">${sign(slope)}kg</b>（体重の${sign(pct)}%）。`;
+  const g = S.profile.goal;
+  // 減量は週に体重の0.5〜1%、増量（筋肉をつける）は0.25〜0.5%が目安
+  if (g === 'diet') msg += pct < -1 ? '減るペースが速めです。筋肉が落ちやすいので、食事を少し増やしましょう（目安は体重の0.5〜1%/週）。' : pct <= -.5 ? 'ちょうどよいペースです。' : '目安は1週間に体重の0.5〜1%減です。';
+  else if (g === 'muscle') msg += pct > .5 ? '増えるペースが速めです。脂肪がつきやすいので、食事を少し控えめに（目安は0.25〜0.5%/週）。' : pct >= .25 ? '筋肉をつけるのにちょうどよいペースです。' : '筋肉をつけるには、1週間に体重の0.25〜0.5%増が目安です。';
+  return msg;
+}
 function vHome() {
   const p = S.profile;
   if (!homeMsg) pickHomeMsg();
@@ -1246,6 +1275,7 @@ function vHome() {
       <div class="rowb"><span class="eyebrow">次のメニュー · DAY ${di + 1}/${S.program.days.length}</span>${trainedToday() ? '<span class="pill ok">今日は達成ずみ</span>' : ''}</div>
       <h2>${day.label}</h2>
       <p class="muted small"><span class="num">約${est}分</span> · ${day.items.length}種目 · 消費の目安 <span class="num">${dayKcal(day)}</span>kcal</p>
+      ${recoveryNote() ? `<p class="cue">${recoveryNote()}</p>` : ''}
       <ul class="exlist">${day.items.map(it => `<li><span>${EXM[it.id].n}</span><span>${rxText(it)}</span></li>`).join('')}</ul>
       <button class="btn primary" data-act="start">${trainedToday() ? 'もう1回やる' : 'はじめる'}</button>
       <button class="btn soft" data-act="mini">気分がのらない日は「5分だけ」</button>
@@ -1387,7 +1417,7 @@ function vSession() {
   const allDone = it.log.every(l => l.done);
   const rows = it.log.map((l, j) => `<div class="set ${l.done ? 'done' : ''}"><span class="no">${j + 1}</span>
     <div class="vals">${e.w ? `<input type="number" inputmode="decimal" step="0.5" min="0" id="w-${s.cur}-${j}" data-log="${j}-w" value="${esc(l.w)}" aria-label="${j + 1}セット目の重さ"><span>kg ×</span>` : ''}
-    <input type="number" inputmode="numeric" min="0" id="r-${s.cur}-${j}" data-log="${j}-r" value="${esc(l.r)}" aria-label="${j + 1}セット目の${it.secT ? '秒数' : '回数'}"><span>${it.secT ? '秒' : '回'}</span></div>
+    <span class="stepper"><button class="stp" data-act="step" data-v="${j}|-1" aria-label="${j + 1}セット目を減らす">−</button><input type="number" inputmode="numeric" min="0" id="r-${s.cur}-${j}" data-log="${j}-r" value="${esc(l.r)}" aria-label="${j + 1}セット目の${it.secT ? '秒数' : '回数'}"><button class="stp" data-act="step" data-v="${j}|1" aria-label="${j + 1}セット目を増やす">＋</button></span><span class="u">${it.secT ? '秒' : '回'}</span></div>
     <div class="acts">${it.secT && !l.done ? `<button class="play" data-act="work" data-v="${j}" aria-label="タイマー開始">${PLAY}</button>` : ''}<button class="chk" data-act="done" data-v="${j}" aria-label="${j + 1}セット目を完了">${CHECK}</button></div></div>`).join('');
   const isLast = s.cur === n - 1;
   return `${bar}<main class="sess">${coach}
@@ -1471,6 +1501,7 @@ function vLog() {
     <section class="card">
       <h2>体重</h2>
       ${sparkline()}
+      ${weightTrend() ? `<p class="small">${weightTrend()}</p>` : ''}
       <div class="inrow"><div class="unit"><input class="inp" type="number" inputmode="decimal" step="0.1" id="wIn" placeholder="${p.weight}" aria-label="今日の体重"><span>kg</span></div><button class="btn primary sm" data-act="logW">記録する</button></div>
       <p class="note">記録した体重は消費カロリーの目安にも使います。</p>
     </section>
@@ -1628,13 +1659,16 @@ async function keepAwake(on) { try { if (on && 'wakeLock' in navigator && !wake)
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.session) keepAwake(true); });
 
 /* ========= session ========= */
+function lastSets(id) { for (let i = S.history.length - 1; i >= 0; i--) { const x = S.history[i].items.find(y => y.id === id); if (x) return x.sets.map(s => s.r); } return []; }
 function sessItem(it, mini) {
   const e = EXM[it.id], pr = S.prog[it.id] || {};
   const sets = mini ? 2 : clamp(it.sets + S.volAdj, 1, 5);
   const loT = it.lo != null ? it.lo + (pr.extra || 0) : null, hiT = it.hi != null ? it.hi + (pr.extra || 0) : null;
   const secT = it.sec ? it.sec + (pr.sec || 0) : null;
   const guess = e.w && pr.w == null ? startW(e) : '';
-  return { ...it, sets, loT, hiT, secT, guess, log: Array.from({ length: sets }, () => ({ w: e.w ? (pr.w ?? guess) : '', r: secT || hiT, done: false })) };
+  // 回数の初期値は「前回のそのセットの回数（なければ目標の下限）」。押すだけで実際以上の記録にならないようにする
+  const prev = lastSets(it.id);
+  return { ...it, sets, loT, hiT, secT, guess, log: Array.from({ length: sets }, (_, j) => ({ w: e.w ? (pr.w ?? guess) : '', r: secT || (prev[j] ? clamp(prev[j], loT, hiT) : loT), done: false })) };
 }
 function startSession(mini) {
   const di = nextDayIdx(), day = S.program.days[di];
@@ -1800,6 +1834,10 @@ const A = {
   },
   catset: t => { S.profile.cat[t.dataset.k] = t.dataset.v; save(); render(); },
   equip: t => { const g = GEARM[t.dataset.v]; if (!g || !S.items.includes(g.id)) return; if (S.equip[g.slot] === g.id) delete S.equip[g.slot]; else { S.equip[g.slot] = g.id; toast(`${g.n}を そうびした`); } save(); render(); },
+  step: t => {
+    const [j, d] = t.dataset.v.split('|').map(Number), it = S.session.items[S.session.cur], l = it.log[j];
+    l.r = Math.max(0, (+l.r || 0) + d * (it.secT ? 5 : 1)); const inp = $(`#r-${S.session.cur}-${j}`); if (inp) inp.value = l.r; save();
+  },
   pace: t => {
     const el = t.closest('.demo');
     if (DM.mode === 'pace') { DM.mode = 'demo'; DM.start = performance.now(); try { speechSynthesis.cancel(); } catch (e) { } return; }

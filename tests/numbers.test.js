@@ -30,3 +30,14 @@ for (const [o, id, lo, hi] of W) { const p = prof(o); app.S = Object.assign(fres
 
 if (errs.length) { console.log('■ 範囲外'); errs.forEach(e => console.log('   - ' + e)); } else console.log('数値チェック：すべて範囲内');
 process.exitCode = errs.length ? 1 : 0;
+
+// 体重の傾き：28日で 70kg→68kg（週 -0.5kg）を正しく出せるか
+{
+  const p = prof({ goal: 'diet', weight: 70 }); app.S = Object.assign(fresh(), { profile: p, weights: [] });
+  for (let d = 27; d >= 0; d -= 3) { const t = new Date(Date.now() - d * 864e5); app.S.weights.push({ d: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`, kg: 68 + 2 * d / 28 }); }
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+  const m = app.weightTrend && app.weightTrend();
+  console.log('  体重の傾き:', m && m.replace(/<[^>]+>/g, ''));
+  const v = m && +m.replace(/<[^>]+>/g, '').match(/([+-][\d.]+)kg/)[1];
+  if (!(v <= -0.4 && v >= -0.6)) { console.log('■ 体重の傾きが不正: ' + v); process.exitCode = 1; }
+}

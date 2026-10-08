@@ -7,6 +7,13 @@ const pick = a => a[Math.floor(rnd() * a.length)];
 const sub = a => a.filter(() => rnd() < .35);
 const fails = {}; const fail = (k, msg) => { (fails[k] = fails[k] || []).length < 3 && fails[k].push(msg); fails[k].n = (fails[k].n || 0) + 1; };
 const GROUP = { squat: 'legs', lunge: 'legs', hinge: 'legs', glute: 'legs', calf: 'legs', push_h: 'push', push_v: 'push', tri: 'push', pull_v: 'pull', pull_h: 'pull', posture: 'pull', bi: 'pull', core: 'core', cardio: 'cardio' };
+// 痛みのある部位ごとに、出してはいけない種目（データの書きかえで安全性が崩れないように固定で持つ）
+const CONTRA = {
+  back: ['superman', 'crunch', 'leg_raise', 'ab_roll', 'bb_dl', 'db_rdl', 'kb_swing', 'bb_row', 'bb_squat', 'hang_knee'],
+  knee: ['jump_squat', 'pistol_box', 'split_squat', 'reverse_lunge', 'step_up', 'db_lunge', 'bulgarian', 'burpee', 'bw_squat', 'goblet_squat', 'bb_squat'],
+  shoulder: ['pullup', 'neg_pullup', 'dead_hang', 'pike_pushup', 'db_press', 'band_ohp', 'bench_dip', 'bb_bench', 'decline_pushup', 'hang_knee'],
+  wrist: ['pushup', 'knee_pushup', 'diamond', 'decline_pushup', 'pike_pushup', 'mountain', 'burpee', 'bench_dip']
+};
 const N = 3000; const over = [];
 for (let n = 0; n < N; n++) {
   const p = { name: 'x', sex: pick(['male', 'female', 'none']), age: 15 + Math.floor(rnd() * 70), height: 145 + Math.floor(rnd() * 50), weight: 40 + Math.floor(rnd() * 80),
@@ -25,6 +32,7 @@ for (let n = 0; n < N; n++) {
       const e = EXM[it.id];
       if (!canUse(e, p)) fail('使えない種目（器具・痛み・衝撃）', `${tag} ${e.n}`);
       if (e.impact && !allowImpact(p)) fail('衝撃のある種目', `${tag} ${e.n}`);
+      p.limits.forEach(l => { if (CONTRA[l].includes(e.id)) fail(`痛み(${l})のある人に禁止種目`, `${tag} ${e.n}`); });
       if (p.level === 'beginner' && e.lv >= 3) fail('初心者に上級種目', `${tag} ${e.n}`);
       if (it.rest < 20 || it.rest > 180) fail('休憩時間が範囲外', `${tag} ${e.n} ${it.rest}秒`);
       week.add(GROUP[e.p]);
