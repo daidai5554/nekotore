@@ -87,6 +87,12 @@ for (const [id, m] of Object.entries(MOT)) {
     const lo = Math.min(...xs) - 3, hi = Math.max(...xs) + 3, c = com(J);
     if (c < lo || c > hi) add(`重心が足の外 (重心x=${c.toFixed(0)}, 足=${lo.toFixed(0)}〜${hi.toFixed(0)}, ${m.ph[f.ph][2] || '静止'})`);
   }
+  // 7) 道具（座面・台）の中に体が入りこんでいないか（関節と体節の中点で確認）
+  const solid = (m.props || []).filter(p => ['box', 'bench', 'chair'].includes(p.k)).map(p => [p.x + 3, p.x + p.w - 3, p.y + 4, p.k === 'box' ? 173 : p.y + (p.k === 'bench' ? 8 : 6)]);
+  if (solid.length) for (const f of F) {
+    const J = f.J, pts = [...js.map(k => [k, J[k]]), ['すね', [(J.kneeN[0] + J.ankN[0]) / 2, (J.kneeN[1] + J.ankN[1]) / 2]], ['太もも', [(J.hipN[0] + J.kneeN[0]) / 2, (J.hipN[1] + J.kneeN[1]) / 2]], ['胴', [(J.hip[0] + J.sh[0]) / 2, (J.hip[1] + J.sh[1]) / 2]]];
+    for (const [k, [x, y]] of pts) for (const [x0, x1, y0, y1] of solid) if (!(m.thru || []).includes(k) && x > x0 && x < x1 && y > y0 && y < y1) add(`${k} が道具の中に入る (${x.toFixed(0)},${y.toFixed(0)})`);
+  }
   // 6) 床（台）につくべき関節がついているか（tests/contacts.json の期待値）
   const exp = CONTACTS[id];
   if (exp) m.P.forEach((P, i) => {

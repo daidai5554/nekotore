@@ -37,6 +37,8 @@ for (let n = 0; n < N; n++) {
       if (it.rest < 20 || it.rest > 180) fail('休憩時間が範囲外', `${tag} ${e.n} ${it.rest}秒`);
       week.add(GROUP[e.p]);
     });
+    const rank = e => e.p === 'cardio' ? 3 : e.p === 'core' ? 2 : 0;
+    const rs = d.items.map(it => rank(EXM[it.id])); if (rs.some((r, i) => i && r < rs[i - 1])) fail('順番（体幹・有酸素が先に来る）', `${tag} DAY${di + 1}: ${d.items.map(it => EXM[it.id].n).join('→')}`);
     if (p.goal === 'posture' && !d.items.some(it => ['posture', 'pull_h', 'pull_v'].includes(EXM[it.id].p))) fail('姿勢目標なのに背中の種目がない日', `${tag} DAY${di + 1}`);
   });
   if (p.minutes >= 20) for (const g of ['legs', 'push', 'pull', 'core']) if (!week.has(g)) fail(`1週間で${g}の種目がない`, tag);
