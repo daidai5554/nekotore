@@ -656,13 +656,17 @@ function estSec(it, sets = it.sets) { return sets * workSec(it, EXM[it.id], it.s
 // 運動強度（METs）。Compendium of Physical Activities（2024）の値を参考にした目安
 // 筋トレの値は「休憩を含めたトレーニング全体の平均」なので、休憩込みの時間にかける。有酸素は動作中だけにかけ、休憩は2.0METs
 const MET = { rest: 1.5, warm: 3.0, cardioRest: 2.0 };
+// 値は 2024 Adult Compendium（pacompendium.com）のコード：02020 自重高強度 7.5 / 02022 自重中強度 3.8 / 02024 軽い腹筋・プランク 2.8 /
+// 02056 自重トレーニング一般 3.0 / 02054 ウエイト 8〜15回 3.5 / 02052 スクワット・デッドリフト 5.0 / 02050 高強度ウエイト 6.0 / 02068 縄跳び 11.0
 function metOf(e, goal = S.profile ? S.profile.goal : 'health') {
-  const o = { single_leg_stand: 2.3, rope: 11.0, burpee: 8.0, jumping_jack: 7.7, mountain: 8.0, high_knee: 6.0, step_jack: 4.0, kb_swing: 6.0 };
+  const o = { single_leg_stand: 2.3, rope: 11.0, burpee: 7.5, jumping_jack: 7.5, mountain: 7.5, high_knee: 6.0, step_jack: 4.0, kb_swing: 6.0, bb_squat: 5.0, bb_dl: 5.0 };
   if (o[e.id]) return o[e.id];
-  if (e.w) return goal === 'muscle' ? 5.0 : goal === 'diet' ? 4.5 : 3.5;   // ウエイト：中強度3.5〜高強度6.0
-  if (['core', 'posture', 'glute', 'calf'].includes(e.p)) return 2.8;      // 軽めの自重（腹筋・小さな動き）
-  return 3.8;                                                               // 自重トレーニング（中強度）
+  if (e.w) return goal === 'muscle' ? 5.0 : goal === 'diet' ? 4.5 : 3.5;   // ウエイト：8〜15回 3.5 〜 高強度 6.0
+  if (['core', 'posture', 'glute', 'calf', 'balance'].includes(e.p)) return 2.8;      // 軽い自重（腹筋・プランク・小さな動き）
+  return goal === 'muscle' || goal === 'diet' ? 3.8 : 3.0;                   // 自重トレーニング：中強度 3.8 / 一般 3.0
 }
+// 60歳以上は Older Adult Compendium の考え方（安静時の酸素摂取量 2.7 ml/kg/分）で、成人の値（3.5）より約23%少なく見積もる
+const ageKcalF = p => p.age >= 60 ? 2.7 / 3.5 : 1;
 // 予定メニューの消費カロリー（kcal）
 function dayKcal(d, p = S.profile) {
   let metSec = (p.minutes <= 10 ? 120 : 180) * MET.warm;
@@ -671,7 +675,7 @@ function dayKcal(d, p = S.profile) {
     if (e.p === 'cardio') { const w = it.sets * workSec(it, e, it.sec || it.hi); metSec += w * metOf(e, p.goal) + (t - w) * MET.cardioRest; }
     else metSec += t * metOf(e, p.goal);
   });
-  return Math.round(metSec / 3600 * p.weight);
+  return Math.round(metSec / 3600 * p.weight * ageKcalF(p));
 }
 // 実際のトレーニングの消費カロリー：有酸素は記録した秒数（＋休憩）、残りの時間を筋トレ種目の平均METsで計算
 function sessionKcal(items, dur, p = S.profile) {
@@ -682,7 +686,7 @@ function sessionKcal(items, dur, p = S.profile) {
   }); });
   // 経過時間が記録した動作時間より短いとき（あとからまとめて記録した等）は、動作時間を下限にする
   const strength = Math.max(work, dur - cardioT), m = setN ? metSum / setN : MET.rest;
-  return Math.round((cardio + strength * m) / 3600 * p.weight);
+  return Math.round((cardio + strength * m) / 3600 * p.weight * ageKcalF(p));
 }
 // 重さのはじめの目安（体重比）。器具1つあたり。安全のため控えめにし、10回が少しきついところで調整してもらう
 const START_W = { goblet_squat: .15, db_rdl: .1, db_bench: .08, db_floor: .08, db_press: .06, db_lateral: .025, db_rear: .025, db_row: .1, db_curl: .05, db_ext: .1, db_lunge: .06, db_calf: .1, kb_swing: .15, bb_squat: .5, bb_dl: .6, bb_bench: .4, bb_row: .35 };
@@ -1655,7 +1659,7 @@ function vSettings() {
       <ul class="src">
         <li><b>回数・セット・休憩・種目の順番</b>：アメリカスポーツ医学会（ACSM）と全米ストレングス＆コンディショニング協会（NSCA）の推奨</li>
         <li><b>1週間のセット数</b>：筋肉をつけるなら主要部位で週10セット以上（Schoenfeld ら, 2017）</li>
-        <li><b>消費カロリー</b>：運動強度（METs）の一覧 Compendium of Physical Activities（2024）× 体重 × 時間</li>
+        <li><b>消費カロリー</b>：運動強度（METs）の一覧 2024 Adult Compendium of Physical Activities × 体重 × 時間。60歳以上は Older Adult Compendium の考え方で約2割少なく見積もります</li>
         <li><b>たんぱく質</b>：運動する人は体重1kgあたり1.4〜2.0g（国際スポーツ栄養学会, 2017）</li>
         <li><b>推定最大重量・重さの目安</b>：Epley 式（最大重量＝重さ×(1＋回数/30)）</li>
         <li><b>体重の変化ペース</b>：減量は週に体重の0.5〜1%、増量は0.25〜0.5%</li>
