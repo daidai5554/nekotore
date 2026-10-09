@@ -350,6 +350,24 @@ textarea.inp{min-height:120px;font-size:12px;font-family:ui-monospace,monospace}
 
 .src{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.6}
 
+/* 到達度 */
+.ranks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rk{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rkrow{width:100%;background:none;border:0;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;text-align:left}
+.rkn{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rkb{font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;background:var(--surface-2);white-space:nowrap}
+.rkb.lv4,.rkb.lv5{background:var(--paw-soft)}
+.rkb.lv6,.rkb.lv7,.rkb.lv8{background:var(--paw);color:var(--on-paw)}
+.rkb.lv9,.rkb.lv10{background:var(--bonito);color:#1C1D38}
+.rkbar{grid-column:1/-1;height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.rkbar i{display:block;height:100%;background:var(--paw);border-radius:99px}
+.rkv{font-size:12px;font-weight:600}
+.rkx{font-size:12px;color:var(--muted);text-align:right}
+.rktable{list-style:none;margin:0;padding:0 12px 10px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.rktable li{display:flex;justify-content:space-between;gap:10px;padding:3px 8px;border-radius:8px;color:var(--muted)}
+.rktable li.done{color:var(--ink)}
+.rktable li.cur{background:var(--paw-soft);color:var(--ink);font-weight:700}
+
 /* modal / toast */
 .modal{position:fixed;inset:0;background:var(--shade);z-index:60;display:grid;place-items:center;padding:16px}
 .modal .card{max-width:400px;width:100%}
@@ -612,7 +630,7 @@ function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e
 let S = load();
 let view = S.profile ? (S.session ? 'session' : 'home') : 'onboard';
 let step = 0, draft = null, editing = false, obErr = '', modal = null, homeMsg = null, homeMood = 'normal';
-let calOff = 0, openHow = null, sessMsg = '', rpeMsg = null, backupText = '';
+let openRank = null, calOff = 0, openHow = null, sessMsg = '', rpeMsg = null, backupText = '';
 
 /* ========= body/program logic ========= */
 const bmi = p => p.weight / ((p.height / 100) ** 2);
@@ -1382,6 +1400,7 @@ function vStatus() {
       ${nextTitle ? `<hr><p class="dim small">Lv ${nextTitle[0]}で称号「${nextTitle[1]}」</p>` : ''}
     </section>
     <p class="note">ちから＝上半身の種目、ふんばり＝下半身、バランス＝体幹・姿勢、スタミナ＝有酸素とトレーニング時間で育ちます。いちばん育った能力でタイプが決まります。</p>
+    ${rankHTML()}
     <section class="rpg catwin">
       <div class="cwrap">${myCat('happy')}<div>
         <div class="rowb"><span class="big">${esc(p.cat.name)}</span><span>Lv ${L}</span></div>
@@ -1575,12 +1594,94 @@ function rpgWin(r) {
     ${g.L1 > g.L0 ? `<p class="ln lvup" ${D()}>${pname()}は レベル ${g.L1} に あがった！</p>` : ''}
     ${g.title ? `<p class="ln" ${D()}>称号「${g.title}」を 手に入れた！</p>` : ''}
     ${g.ups.map(u => `<p class="ln" ${D()}>${u[0]}が ${u[2] - u[1]} あがった！</p>`).join('')}
+    ${(g.ranks || []).map(([n, a, b, L]) => `<p class="ln lvup" ${D()}>${n}の到達度が「${a}」→「${b}」（Lv${L}）に あがった！</p>`).join('')}
     ${g.ach.map(a => `<p class="ln" ${D()}>実績「${a}」を 達成した！</p>`).join('')}
     <div class="bar ln" ${D()}><i style="width:${g.pct}%"></i></div>
     <p class="dim small">Lv ${g.L1} · つぎのレベルまで ${g.left}</p>
   </section>${g.drop && S.equip[GEARM[g.drop].slot] !== g.drop ? `<button class="btn soft" data-act="equip" data-v="${g.drop}">${GEARM[g.drop].n}を ${cat}に そうびさせる</button>` : ''}`;
 }
 // 種目ごとの伸び：重さの種目は推定最大重量（Epley式：重さ×(1+回数/30)）、自重の種目は1セットの最高回数
+/* ========= 到達度（体格に応じた10段階） ========= */
+// 基準：体重70kg・30〜40代の男性で、トレーニングを続けている人＝「中級」の値。
+//  w：推定最大重量（器具1つあたり）÷ 体重、r：1セットの最高回数、s：最高秒数。部位 U=上半身 L=下半身 C=体幹 B=バランス
+// 最上位「達人」は中級の1.6倍（例：ベンチプレス 体重の1.6倍）。愛好家の上級レベルで、競技のトップ選手より下に置いている
+const RANKS = ['はじめの一歩', '入門', '初心者', '一般人', '経験者', '中級', '中上級', '上級', '玄人', '達人'];
+const RANK_F = [0, .3, .45, .6, .8, 1, 1.15, 1.3, 1.45, 1.6];
+const STD = {
+  bb_squat: ['w', 1.5, 'L'], bb_dl: ['w', 2.0, 'L'], bb_bench: ['w', 1.0, 'U'], bb_row: ['w', .9, 'U'],
+  goblet_squat: ['w', .5, 'L'], db_rdl: ['w', .5, 'L'], db_lunge: ['w', .35, 'L'], db_calf: ['w', .6, 'L'], kb_swing: ['w', .45, 'L'],
+  db_bench: ['w', .38, 'U'], db_floor: ['w', .35, 'U'], db_press: ['w', .27, 'U'], db_row: ['w', .45, 'U'], db_curl: ['w', .22, 'U'],
+  db_lateral: ['w', .12, 'U'], db_rear: ['w', .11, 'U'], db_ext: ['w', .3, 'U'],
+  pushup: ['r', 35, 'U'], knee_pushup: ['r', 40, 'U'], wall_pushup: ['r', 60, 'U'], incline_pushup: ['r', 40, 'U'], decline_pushup: ['r', 25, 'U'],
+  diamond: ['r', 20, 'U'], pike_pushup: ['r', 15, 'U'], pullup: ['r', 12, 'U'], dead_hang: ['s', 60, 'U'], bench_dip: ['r', 30, 'U'],
+  bw_squat: ['r', 50, 'L'], chair_squat: ['r', 40, 'L'], split_squat: ['r', 25, 'L'], reverse_lunge: ['r', 25, 'L'], bulgarian: ['r', 18, 'L'],
+  step_up: ['r', 25, 'L'], pistol_box: ['r', 12, 'L'], jump_squat: ['r', 30, 'L'], glute_bridge: ['r', 40, 'L'], single_bridge: ['r', 20, 'L'],
+  hip_thrust: ['r', 30, 'L'], calf_raise: ['r', 50, 'L'], wall_sit: ['s', 90, 'L'],
+  superman: ['r', 30, 'C'], crunch: ['r', 50, 'C'], leg_raise: ['r', 20, 'C'], ab_roll: ['r', 15, 'C'], hang_knee: ['r', 15, 'C'],
+  dead_bug: ['r', 20, 'C'], bird_dog: ['r', 20, 'C'], plank: ['s', 120, 'C'], side_plank: ['s', 60, 'C'], burpee: ['r', 25, 'C'],
+  single_leg_stand: ['s', 45, 'B']
+};
+// 体格の補正：性別（部位ごと）・年齢・体重
+function rankBase(id, p = S.profile) {
+  const d = STD[id]; if (!d) return null;
+  const [kind, v, part] = d, bw = clamp(p.weight, 30, 200);
+  const fem = kind === 'w' ? { U: .55, L: .7, C: .8, B: 1 }[part] : { U: .5, L: .85, C: .9, B: 1 }[part];
+  const sexF = p.sex === 'female' ? fem : p.sex === 'none' ? (1 + fem) / 2 : 1;
+  // 筋力は41歳から年1%ほど下がる。バランスはもっと早く下がる
+  const ageF = p.age < 18 ? .85 : p.age <= 40 ? 1 : part === 'B' ? Math.max(.3, 1 - .02 * (p.age - 40)) : Math.max(.55, 1 - .01 * (p.age - 40));
+  // 重さ：筋力は体重の約2/3乗に比例（体重が重いほど持てる重さは増えるが、体重比では下がる）
+  // 回数：自分の体重を動かすので、体重が重いほど回数は減る
+  const bwF = kind === 'w' ? Math.pow(bw / 70, .67) * 70 : clamp(Math.pow(70 / bw, { U: .7, L: .5, C: .4, B: 0 }[part]), .55, 1.35);
+  return kind === 'w' ? v * bwF * sexF * ageF : v * bwF * sexF * ageF;
+}
+function rankTable(id, p = S.profile) {
+  const base = rankBase(id, p); if (base == null) return null;
+  const kind = STD[id][0];
+  const rnd = x => kind === 'w' ? (x < 10 ? Math.round(x * 2) / 2 : x < 40 ? Math.round(x) : Math.round(x / 2.5) * 2.5) : kind === 's' ? Math.max(5, Math.round(x / 5) * 5) : Math.max(1, Math.round(x));
+  const t = RANK_F.map(f => f ? rnd(base * f) : 0);
+  for (let i = 2; i < t.length; i++) if (t[i] <= t[i - 1]) t[i] = t[i - 1] + (kind === 'w' ? .5 : kind === 's' ? 5 : 1);
+  return t;
+}
+// これまでの記録の最高値：重さは推定最大重量（Epley 式、回数は12回までで計算）、自重は1セットの最高回数・秒数
+function rankBest(id, hist = S.history) {
+  const d = STD[id]; if (!d) return 0;
+  let best = 0;
+  hist.forEach(h => h.items.forEach(it => { if (it.id !== id) return; it.sets.forEach(x => {
+    const v = d[0] === 'w' ? (x.w > 0 ? x.w * (1 + Math.min(x.r, 12) / 30) : 0) : x.r;
+    if (v > best) best = v;
+  }); }));
+  return best;
+}
+function rankOf(id, hist = S.history, p = S.profile) {
+  const t = rankTable(id, p); if (!t) return null;
+  const v = rankBest(id, hist); let i = 0;
+  for (let k = 1; k < t.length; k++) if (v >= t[k]) i = k;
+  return { i, v, t, kind: STD[id][0], next: t[i + 1] };
+}
+const rankUnit = k => k === 'w' ? 'kg' : k === 's' ? '秒' : '回';
+const rankVal = (k, v) => k === 'w' ? (Math.round(v * 10) / 10).toFixed(1) : String(Math.floor(v));
+function rankHTML() {
+  const p = S.profile;
+  const ids = [...new Set([...S.history.flatMap(h => h.items.map(it => it.id)), ...S.program.days.flatMap(d => d.items.map(it => it.id))])].filter(id => STD[id]);
+  if (!ids.length) return '';
+  const rows = ids.map(id => ({ id, r: rankOf(id) })).sort((a, b) => b.r.i - a.r.i || b.r.v - a.r.v).map(({ id, r }) => {
+    const e = EXM[id], u = rankUnit(r.kind), lo = r.t[r.i], hi = r.next, pct = hi ? Math.round(clamp((r.v - lo) / (hi - lo), 0, 1) * 100) : 100, open = openRank === id;
+    const nextTxt = !r.v ? 'まだ記録がありません' : hi ? `「${RANKS[r.i + 1]}」まで あと${rankVal(r.kind, hi - r.v)}${u}` : '最上位に到達！';
+    return `<li class="rk${open ? ' open' : ''}">
+      <button class="rkrow" data-act="rank" data-v="${id}" aria-expanded="${open}">
+        <span class="rkn">${e.n}</span><span class="rkb lv${r.i + 1}">Lv${r.i + 1} ${RANKS[r.i]}</span>
+        <span class="rkbar"><i style="width:${pct}%"></i></span>
+        <span class="rkv num">${r.v ? `最高 ${rankVal(r.kind, r.v)}${u}${r.kind === 'w' ? '（推定）' : ''}` : ''}</span><span class="rkx">${nextTxt}</span>
+      </button>
+      ${open ? `<ol class="rktable">${r.t.map((x, k) => `<li class="${k === r.i ? 'cur' : k < r.i ? 'done' : ''}"><span>Lv${k + 1} ${RANKS[k]}</span><span class="num">${k ? `${rankVal(r.kind, x)}${u}${r.kind === 'w' ? '' : ''}` : '記録すれば到達'}</span></li>`).join('')}</ol>` : ''}
+    </li>`;
+  }).join('');
+  const who = `${p.sex === 'female' ? '女性' : p.sex === 'male' ? '男性' : ''}・${p.age}歳・${p.weight}kg`;
+  return `<section style="display:flex;flex-direction:column;gap:10px"><div class="rowb"><h2>種目の到達度</h2><span class="small muted">${who}の基準</span></div>
+    <ul class="ranks">${rows}</ul>
+    <p class="note">あなたの性別・年齢・体重から、10段階の目安を出しています。重さの種目は記録した重さと回数から出した「1回だけ持ち上げられる重さ」（器具1つあたり）、自重の種目は1セットの最高回数・秒数で判定します。最上位の「達人」は、同じ体格の人が長く続ければ届く上級レベルで、競技のトップ選手の水準ではありません。種目をタップすると、各レベルの目安を見られます。</p>
+  </section>`;
+}
 function strengthHTML() {
   const by = {};
   S.history.forEach(h => h.items.forEach(it => {
@@ -1884,6 +1985,7 @@ function finishSession() {
     const now = Math.max(...it.sets.map(v));
     if (had && now > prev) { prs++; notes.unshift(`自己ベスト！${e.n} ${now}${e.w ? 'kg' : e.unit === 'sec' ? '秒' : '回'}`); }
   });
+  const rank0 = Object.fromEntries(items.filter(it => STD[it.id]).map(it => [it.id, rankOf(it.id).i]));
   const before = bondLv(S.xp), bonus = catBonus(), p0 = player(), ach0 = new Set(achievements().filter(a => a[2]).map(a => a[0]));
   let xp = s.mini ? 5 : 10;
   const bt = s.battle;
@@ -1900,6 +2002,7 @@ function finishSession() {
     title: titleOf(p1.lv.L) !== titleOf(p0.lv.L) ? titleOf(p1.lv.L) : null,
     ups: STATS.filter(([k]) => p1.st[k].L > p0.st[k].L).map(([k, l]) => [l, p0.st[k].L, p1.st[k].L]),
     ach: achievements().filter(a => a[2] && !ach0.has(a[0])).map(a => a[0]),
+    ranks: Object.entries(rank0).map(([id, i0]) => [id, i0, rankOf(id).i]).filter(([, a, b]) => b > a).map(([id, a, b]) => [EXM[id].n, RANKS[a], RANKS[b], b + 1]),
     mon: bt ? bt.m.n : null, won: h.win, drop: drop ? drop.id : null
   };
   S.xp += xp;
@@ -1984,6 +2087,7 @@ const A = {
     l.r = Math.max(0, (+l.r || 0) + d * (it.secT ? 5 : 1)); const inp = $(`#r-${S.session.cur}-${j}`); if (inp) inp.value = l.r; save();
   },
   pain: () => confirmBox('この種目はここでやめて、別の種目に替えますか？<br><span class="small muted">痛みが続くときは無理をせず、設定の「情報を変えてメニューを作り直す」で痛みのある部位を選んでください。強い痛み・しびれ・胸の痛みがあるときは、すぐに中止して医療機関に相談してください。</span>', '替える', () => { if (A.swapSess()) { sessMsg = '無理しないでにゃ。別の種目にしたにゃ'; save(); render(); } else { A.go({ dataset: { v: S.session.cur + 1 } }); sessMsg = '無理しないでにゃ。この種目はとばしたにゃ'; render(); } }),
+  rank: t => { openRank = openRank === t.dataset.v ? null : t.dataset.v; render(); },
   noteOk: () => { delete S.programNote; save(); render(); },
   pace: t => {
     const el = t.closest('.demo');

@@ -1,6 +1,6 @@
 // オフラインでも開けるように、アプリ本体をキャッシュする
 // アプリを更新したら CACHE の番号を上げる（古いキャッシュは自動で消える）
-const CACHE = 'nekotore-v2';
+const CACHE = 'nekotore-v3';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
