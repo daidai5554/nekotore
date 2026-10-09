@@ -15,4 +15,5 @@ fs.rmSync(pub, { recursive: true, force: true });
 fs.mkdirSync(path.join(pub, 'icons'), { recursive: true });
 for (const f of ['index.html', 'manifest.json', 'sw.js']) fs.copyFileSync(path.join(root, f), path.join(pub, f));
 for (const f of fs.readdirSync(path.join(root, 'icons'))) fs.copyFileSync(path.join(root, 'icons', f), path.join(pub, 'icons', f));
+fs.writeFileSync(path.join(pub, '.nojekyll'), '');   // GitHub Pages にファイルをそのまま配信させる
 console.log(`docs/ を作成（${fs.readdirSync(pub).length}項目）`);

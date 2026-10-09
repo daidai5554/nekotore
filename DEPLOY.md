@@ -4,11 +4,11 @@
 ```
 node tests/tools/build.js
 ```
-`public/` フォルダができます（index.html・manifest.json・sw.js・icons）。
+`docs/` フォルダができます（index.html・manifest.json・sw.js・icons）。
 
 ## 2. 無料ホスティングに置く（Netlify Drop の場合）
 1. https://app.netlify.com/drop を開き、無料アカウントでログインする
-2. `public` フォルダをそのままドラッグ＆ドロップする
+2. `docs` フォルダをそのままドラッグ＆ドロップする
 3. `https://〇〇.netlify.app` のURLが発行される（サイト名は設定で変更できる）
 
 ## 3. Android にインストールする
@@ -19,7 +19,7 @@ node tests/tools/build.js
 ## 更新するとき
 1. `sw.js` の `CACHE = 'nekotore-v2'` の数字を1つ上げる
 2. `node tests/tools/build.js` で作り直す
-3. Netlify のサイトの「Deploys」に `public` フォルダをもう一度ドラッグ＆ドロップ
+3. Netlify のサイトの「Deploys」に `docs` フォルダをもう一度ドラッグ＆ドロップ
 
 ## データについて
 記録はスマホの中（そのURLごと）に保存されます。claude.ai で試していたときのデータは自動では移りません。
