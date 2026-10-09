@@ -5,7 +5,7 @@ const js = html.split('<script>')[1].split('</script>')[0];
 const errs = [];
 // 最初の版（v1）で保存されていた形のデータ
 const old = {
-  v: 1, profile: { name: 'だいすけ', sex: 'male', age: 35, height: 172, weight: 70, goal: 'muscle', level: 'beginner', equipment: ['dumbbell', 'chair'], limits: [], days: 3, minutes: 20, cat: { name: 'ムギ', coat: 'chatora', per: 'tsundere' } },
+  v: 1, profile: { name: 'テスト', sex: 'male', age: 35, height: 172, weight: 70, goal: 'muscle', level: 'beginner', equipment: ['dumbbell', 'chair'], limits: [], days: 3, minutes: 20, cat: { name: 'ムギ', coat: 'chatora', per: 'tsundere' } },
   program: null, history: [{ ts: Date.now() - 3 * 864e5, label: 'DAY 1 全身', mini: false, dur: 1200, items: [{ id: 'goblet_squat', sets: [{ w: 8, r: 12 }, { w: 8, r: 11 }] }, { id: 'pushup', sets: [{ w: 0, r: 10 }] }], kcal: 80, vol: 184, rpe: 'ok' }],
   weights: [{ d: '2026-10-01', kg: 70 }], prog: { goblet_squat: { w: 8 } }, xp: 34, lastPet: null, volAdj: 0, acc: 'band', rot: 1, session: null, lastResult: null
 };
