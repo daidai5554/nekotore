@@ -20,7 +20,7 @@ function loadApp() {
   const expose = `return { get S() { return S; }, set S(v) { S = v; }, EX, EXM, MOT, MOTMAP, BASEP, SEG, solve, lerpP, buildProgram, candidates, canUse, makeItem, estSec, dayEst, allowImpact, bmi, fresh, GROUPS, TEMPLATES, SPLITS, LIMITS, EQUIP, GOALS, LEVELS,
     startSession, markDone, finishSession, player, calcExp, kcalOf, render, A, stopTimer, sessItem, nextDayIdx,
     get view() { return view; }, set view(v) { view = v; }, get draft() { return draft; }, set draft(v) { draft = v; }, get step() { return step; }, set step(v) { step = v; },
-    sessionKcal, repSec, dayKcal, startW, metOf, weekVolume, roundW, breath, weightTrend, recoveryNote, strengthHTML, rankTable, rankOf, rankHTML, STD, RANKS };`;
+    sessionKcal, repSec, dayKcal, startW, metOf, weekVolume, roundW, breath, weightTrend, recoveryNote, strengthHTML, rankTable, rankOf, rankHTML, STD, RANKS, say };`;
   const fn = new Function(...names, js + '\n' + expose);
   return fn(...names.map(n => g[n]));
 }

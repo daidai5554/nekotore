@@ -398,7 +398,7 @@ const deep = o => JSON.parse(JSON.stringify(o));
 const EQUIP = [
   ['mat', 'ヨガマット'], ['chair', '安定した椅子'], ['dumbbell', 'ダンベル（可変式含む）'], ['kettlebell', 'ケトルベル'],
   ['band', 'チューブ・ゴムバンド'], ['pullup', '懸垂バー・ぶら下がり器'], ['bench', 'トレーニングベンチ'],
-  ['barbell', 'バーベル＋ラック'], ['abroller', '腹筋ローラー'], ['jumprope', '縄跳び'], ['stepbox', '踏み台・ステップ台']
+  ['barbell', 'バーベル＋ラック'], ['abroller', '腹筋ローラー'], ['pushbar', 'プッシュアップバー'], ['jumprope', '縄跳び'], ['stepbox', '踏み台・ステップ台']
 ];
 const LIMITS = [['knee', '膝'], ['back', '腰'], ['shoulder', '肩'], ['wrist', '手首']];
 const GOALS = [
@@ -466,6 +466,9 @@ const EX = [
   // push horizontal
   { id: 'wall_pushup', n: '壁腕立て伏せ', p: 'push_h', lv: 1, next: 'incline_pushup', how: ['壁に両手をつき、体をまっすぐにする', '胸を壁に近づけて押し戻す'], cue: 'お腹に力を入れるにゃ' },
   { id: 'incline_pushup', n: '台に手をつく腕立て伏せ', p: 'push_h', lv: 1, req: [['chair', 'bench']], pri: .2, next: 'knee_pushup', how: ['椅子の座面に手をつく（壁につけて固定）', '体をまっすぐにして胸を近づける'], cue: '椅子が動かないように確認にゃ' },
+  // プッシュアップバー：手首がまっすぐになり（手首の痛みでも可）、胸を深く下ろせるぶん同じ回数でもきつい
+  { id: 'knee_pushup_bar', n: 'バーで膝つき腕立て伏せ', p: 'push_h', lv: 1, req: [['pushbar']], pri: .5, next: 'pushup_bar', how: ['プッシュアップバーを肩幅より少し広く置き、膝をついて握る', '頭から膝まで一直線のまま、胸をバーの高さより少し下まで下ろす'], cue: '手首がまっすぐで楽ちんにゃ' },
+  { id: 'pushup_bar', n: 'バーで腕立て伏せ', p: 'push_h', lv: 2, req: [['pushbar']], pri: .4, how: ['プッシュアップバーを肩幅より少し広く置いて握る', '頭からかかとまで一直線のまま、胸をバーの高さより下まで深く下ろす'], cue: '深く下ろせるぶん、ふつうの腕立てよりよく効くにゃ' },
   { id: 'knee_pushup', n: '膝つき腕立て伏せ', p: 'push_h', lv: 1, avoid: ['wrist'], pri: .3, next: 'pushup', how: ['膝をついて四つんばいになり、手は肩幅より広め', '頭から膝まで一直線のまま胸を下ろす'], cue: 'お尻が上がらないようににゃ' },
   { id: 'pushup', n: '腕立て伏せ', p: 'push_h', lv: 2, avoid: ['wrist'], next: 'decline_pushup', how: ['手を肩幅より少し広くつく', '頭からかかとまで一直線で胸を床に近づける'], cue: 'ひじは開きすぎないにゃ' },
   { id: 'decline_pushup', n: '足上げ腕立て伏せ', p: 'push_h', lv: 3, req: [['chair', 'bench']], avoid: ['wrist', 'shoulder'], how: ['足を椅子にのせて腕立ての姿勢', 'ゆっくり胸を下ろして押し上げる'], cue: '上の胸に効くにゃ' },
@@ -565,9 +568,9 @@ const LINES = {
     set: ['いいフォームだったにゃ', 'その調子にゃ！', 'ナイスにゃ。呼吸を整えてにゃ'],
     last: ['これがこの種目の最後にゃ。出しきろうにゃ'],
     rest: ['水を飲むといいにゃ', '深呼吸にゃ。すーはー'],
-    finish: ['おつかれさまにゃ！今日の{name}、とってもかっこよかったにゃ', 'やりきったにゃ！ぼくもうれしいにゃ'],
+    finish: ['おつかれさまにゃ！今日の{name}、とってもかっこよかったにゃ', 'やりきったにゃ！{I}もうれしいにゃ'],
     mini: ['5分だけでも、やったかやらないかは大ちがいにゃ'],
-    pet: ['ごろごろ…にゃ', 'もっとなでてもいいにゃ', 'えへへ、くすぐったいにゃ'],
+    pet: ['ごろごろ…にゃ', 'もっとなでてもいいにゃ', 'えへへ、くすぐったいにゃ', '{I}、なでられるの大好きにゃ'],
     pet_again: ['今日はいっぱいなでてもらったにゃ。またあしたもにゃ'],
     levelup: ['なかよし度が上がったにゃ！'],
     hard: ['きつかったにゃ？次は少し軽くするにゃ。無理は禁物にゃ'],
@@ -588,7 +591,7 @@ const LINES = {
     rest: ['休憩は短めにゃ。…でも水は飲むにゃ'],
     finish: ['…やるじゃないかにゃ。ちょっとだけ見直したにゃ', 'おつかれ。べ、別に感動してないにゃ'],
     mini: ['5分？…まあ、ゼロよりずっとマシにゃ'],
-    pet: ['さ、さわるにゃ！…もうちょっとだけならいいにゃ', 'ゴロゴロなんて言ってないにゃ'],
+    pet: ['さ、さわるにゃ！…もうちょっとだけならいいにゃ', 'ゴロゴロなんて言ってないにゃ', '{I}は安くないにゃ。…でも今日はとくべつにゃ'],
     pet_again: ['今日はもう十分にゃ！…あしたもなでるにゃ？'],
     levelup: ['…ちょっとだけ、なかよくなってやってもいいにゃ'],
     hard: ['きつかった？…次は少し減らしてやるにゃ。ケガされたら困るにゃ'],
@@ -609,18 +612,22 @@ const LINES = {
     rest: ['呼吸を整えるにゃ！次も全力にゃ！'],
     finish: ['やりきったにゃ！{name}は最高のパートナーにゃ！', '今日の努力は絶対に裏切らないにゃ！'],
     mini: ['5分でも全力なら立派なトレーニングにゃ！'],
-    pet: ['うおお、元気が出るにゃ！', 'ゴロゴロ…ハッ、気合いが入ったにゃ！'],
+    pet: ['うおお、元気が出るにゃ！', 'ゴロゴロ…ハッ、気合いが入ったにゃ！', '{I}の気合いもフルパワーにゃ！'],
     pet_again: ['今日の充電は満タンにゃ！続きはあしたにゃ！'],
-    levelup: ['なかよし度アップにゃ！ぼくたち最強コンビにゃ！'],
+    levelup: ['なかよし度アップにゃ！{I}たち最強コンビにゃ！'],
     hard: ['よく耐えたにゃ！次は少し調整するにゃ。ケガしないのが一番にゃ！'],
     ok: ['ベストな強度にゃ！このまま進むにゃ！'],
     easy: ['余裕だったか！次はレベルアップにゃ！']
   }
 };
+// 猫の一人称：性別と性格で変わる
+const CAT_I = { male: { gentle: 'ぼく', tsundere: 'おれ', hot: 'おれ' }, female: { gentle: 'わたし', tsundere: 'あたし', hot: 'あたし' } };
+const catI = (c = S.profile && S.profile.cat) => (CAT_I[(c && c.sex) || 'male'] || CAT_I.male)[(c && c.per) || 'gentle'];
+const catMark = c => c && c.sex === 'female' ? '♀' : '♂';
 function say(k) {
   const per = S.profile?.cat?.per || 'gentle';
   const arr = LINES[per][k] || LINES.gentle[k];
-  return esc(pick(arr)).replace(/\{name\}/g, esc(S.profile?.name || 'きみ'));
+  return esc(pick(arr)).replace(/\{name\}/g, esc(S.profile?.name || 'きみ')).replace(/\{I\}/g, catI());
 }
 
 /* ========= state ========= */
@@ -799,7 +806,7 @@ function balanceWeek(days, p) {
 const dayEst = (d, p) => Math.round(((p.minutes <= 10 ? 120 : 180) + d.items.reduce((a, it) => a + estSec(it, effSets(it)), 0)) / 60);
 
 // メニューの作り方を変えたら数字を上げる。古いメニューは読みこみ時に作り直す
-const PROGRAM_VER = 3;
+const PROGRAM_VER = 4;
 function buildProgram(p) {
   const seen = new Set();
   const days = SPLITS[p.days].map(([t, v]) => { const d = buildDay(t, v, p, seen); d.items.forEach(it => seen.add(it.id)); return d; });
@@ -1117,6 +1124,9 @@ const MOT = {
   sidewalk: { v: 'f', an: 'hip', at: [120, 110.5], props: [{ k: 'band', a: 'kneeN', b: 'kneeF' }], P: [L2(8, 8), { thN: 22, snN: 18, thF: 8, snF: 8 }], ph: [[1, .7, '横へ一歩'], [0, .7, '足をよせる']], pts: ['軽くしゃがんだまま', '膝が内に入らないように', 'つま先は正面'], ng: '上体が左右にゆれる' }
 };
 MOT.dblunge = { ...MOT.revlunge, props: [{ k: 'db', j: 'handN' }] };
+// バーで腕立て：手はバーの握り（床から約9）を持ち、胸を握りより下まで下ろす
+MOT.pushbar = { ...MOT.pushup, props: [{ k: 'handle', x: 126, y: 163, w: 18 }], P: [{ t: 111, thN: -69, snN: -69, thF: -69, snF: -69, ft: 10, ftF: 10, hN: [135, 161], hF: [135, 161] }, { t: 90, thN: -90, snN: -90, thF: -90, snF: -90, ft: 10, ftF: 10, hN: [135, 161], hF: [135, 161] }], ph: PH(2, 1, '胸をバーより下まで下ろす', '押し上げる'), pts: ['頭からかかとまで一直線', '胸をバーの高さより下まで', '手首はまっすぐのまま'], ng: '浅い位置で止めてしまう' };
+MOT.kneepushbar = { ...MOT.kneepush, props: [{ k: 'handle', x: 129, y: 163, w: 18 }], P: [{ t: 124, thN: -51, snN: -95, thF: -51, snF: -95, ft: -90, ftF: -90, hN: [138, 161], hF: [138, 161] }, { t: 96, thN: -84, snN: -95, thF: -84, snF: -95, ft: -90, ftF: -90, hN: [138, 161], hF: [138, 161] }], ph: PH(2, 1, '胸をバーより下まで下ろす', '押し上げる'), pts: ['頭から膝まで一直線', '胸をバーの高さより下まで', '手首はまっすぐのまま'], ng: 'お尻だけ後ろに引ける' };
 MOT.diamond = { ...MOT.pushup, pts: ['両手の親指と人さし指でひし形をつくる', 'ひじは体にそわせて後ろへ曲げる', '頭からかかとまで一直線'], ng: 'ひじが外に大きく開く' };
 MOT.bbbench = { ...MOT.benchpress, props: [{ k: 'bench', x: 30, y: 140, w: 96 }, { k: 'bar', j: 'handN', r: 11 }] };
 MOT.bandohp = { ...MOT.ohp, props: [{ k: 'band', a: 'handN', b: 'ankN' }] };
@@ -1127,7 +1137,7 @@ MOT.hangknee = { ...MOT.pullup, P: [{ ...A2(178, 178), ...L2(25, -65) }, { ...A2
 MOT.dbcalf = { ...MOT.calf, props: [{ k: 'db', j: 'handN' }], P: [{}, { ft: 55, ftF: 55, t: 177, thN: -4, snN: -4, thF: -4, snF: -4 }] };
 Object.values(MOT).forEach(m => { m.P = m.P.map(x => ({ ...BASEP, ...x })); });
 // 自動調整（tests/tools/tune.js）の結果。キーポーズごとの微調整値
-const MOT_TUNE = {"plank":{"0":{"t":97,"thN":-83,"snN":-83,"thF":-83,"snF":-83,"uaN":0,"uaF":0}},"declinepush":{"0":{"t":83,"thN":-97,"snN":-97,"thF":-97,"snF":-97},"1":{"t":75,"thN":-105,"snN":-105,"thF":-105,"snF":-105}},"pike":{"0":{"t":52,"thN":-37,"snN":-37,"thF":-37,"snF":-37,"hN":[149.5,170],"hF":[149.5,170]},"1":{"t":45,"thN":-36.5,"snN":-36.5,"thF":-36.5,"snF":-36.5}},"wallpush":{"0":{"t":157,"thN":-23,"snN":-23,"thF":-23,"snF":-23},"1":{"t":150,"thN":-30,"snN":-30,"thF":-30,"snF":-30}},"birddog":{"0":{"t":114},"1":{"t":114}},"calf":{"0":{"hN":[163.5,72],"hF":[163.5,72]},"1":{"hN":[166,72],"hF":[166,72]}},"burpee":{"1":{"ay":140.5,"t":120},"2":{"ay":135.5,"t":111}},"kneepush":{"1":{"t":104.5,"thN":-81,"thF":-81}},"inclinepush":{"1":{"t":120,"thN":-60,"snN":-60,"thF":-60,"snF":-60}}};
+const MOT_TUNE = {"plank":{"0":{"t":97,"thN":-83,"snN":-83,"thF":-83,"snF":-83,"uaN":0,"uaF":0}},"declinepush":{"0":{"t":83,"thN":-97,"snN":-97,"thF":-97,"snF":-97},"1":{"t":75,"thN":-105,"snN":-105,"thF":-105,"snF":-105}},"pike":{"0":{"t":52,"thN":-37,"snN":-37,"thF":-37,"snF":-37,"hN":[149.5,170],"hF":[149.5,170]},"1":{"t":45,"thN":-36.5,"snN":-36.5,"thF":-36.5,"snF":-36.5}},"wallpush":{"0":{"t":157,"thN":-23,"snN":-23,"thF":-23,"snF":-23},"1":{"t":150,"thN":-30,"snN":-30,"thF":-30,"snF":-30}},"birddog":{"0":{"t":114},"1":{"t":114}},"calf":{"0":{"hN":[163.5,72],"hF":[163.5,72]},"1":{"hN":[166,72],"hF":[166,72]}},"burpee":{"1":{"ay":140.5,"t":120},"2":{"ay":135.5,"t":111}},"kneepush":{"1":{"t":104.5,"thN":-81,"thF":-81}},"inclinepush":{"1":{"t":120,"thN":-60,"snN":-60,"thF":-60,"snF":-60}},"pushbar":{"0":{"t":115.5,"thN":-64.5,"snN":-64.5,"thF":-64.5,"snF":-64.5},"1":{"t":94.5,"thN":-85.5,"snN":-85.5,"thF":-85.5,"snF":-85.5}},"kneepushbar":{"0":{"t":124,"thN":-51,"thF":-51},"1":{"t":107,"thN":-76,"thF":-76}}};
 for (const [k, ps] of Object.entries(MOT_TUNE)) for (const [i, o] of Object.entries(ps)) Object.assign(MOT[k].P[i], o);
 const MOTMAP = {
   chair_squat: 'chairsquat', wall_sit: 'wallsit', bw_squat: 'squat', goblet_squat: 'goblet', bb_squat: 'bbsquat', jump_squat: 'jumpsquat', pistol_box: 'pistol',
@@ -1137,7 +1147,7 @@ const MOTMAP = {
   db_bench: 'benchpress', band_press: 'bandpress', bb_bench: 'bbbench', pike_pushup: 'pike', db_press: 'ohp', band_ohp: 'bandohp', db_lateral: 'lateral',
   pullup: 'pullup', neg_pullup: 'negpull', dead_hang: 'hang', band_pulldown: 'pulldown', db_row: 'dbrow', band_row: 'bandrow', bb_row: 'bbrow', db_rear: 'rearfly',
   prone_w: 'wraise', y_raise: 'yraise', band_pa: 'pullapart', db_curl: 'curl', band_curl: 'bandcurl', db_ext: 'french', band_kick: 'kickback', bench_dip: 'dip',
-  diamond: 'diamond', dead_bug: 'deadbug', plank: 'plank', bird_dog: 'birddog', crunch: 'crunch', side_plank: 'sideplank', leg_raise: 'legraise', ab_roll: 'abroll',
+  diamond: 'diamond', pushup_bar: 'pushbar', knee_pushup_bar: 'kneepushbar', dead_bug: 'deadbug', plank: 'plank', bird_dog: 'birddog', crunch: 'crunch', side_plank: 'sideplank', leg_raise: 'legraise', ab_roll: 'abroll',
   hang_knee: 'hangknee', single_leg_stand: 'balance', calf_raise: 'calf', db_calf: 'dbcalf', step_jack: 'stepjack', high_knee: 'highknee', jumping_jack: 'jack', mountain: 'mountain', rope: 'rope', burpee: 'burpee'
 };
 
@@ -1204,6 +1214,7 @@ function propStatic(p) {
   if (p.k === 'box') return `<rect class="pr" x="${p.x}" y="${p.y}" width="${p.w}" height="${173 - p.y}" rx="3"/>`;
   if (p.k === 'wall') return `<rect class="pr" x="${p.x}" y="10" width="8" height="163"/>`;
   if (p.k === 'pbar') return `<path class="prl" d="M${p.x - 40} ${p.y} H${p.x + 40}" style="stroke-width:5"/>`;
+  if (p.k === 'handle') { const c = p.x + p.w / 2; return `<path class="prl" d="M${c - 9} 173 L${c} ${p.y} L${c + 9} 173"/><circle class="pr" cx="${c}" cy="${p.y - 1}" r="3.5"/>`; }
   if (p.k === 'door') return `<rect class="pr" x="${p.x - 5}" y="${p.y - 5}" width="10" height="10" rx="2"/>`;
   return '';
 }
@@ -1403,7 +1414,7 @@ function vStatus() {
     ${rankHTML()}
     <section class="rpg catwin">
       <div class="cwrap">${myCat('happy')}<div>
-        <div class="rowb"><span class="big">${esc(p.cat.name)}</span><span>Lv ${L}</span></div>
+        <div class="rowb"><span class="big">${esc(p.cat.name)} ${catMark(p.cat)}</span><span>Lv ${L}</span></div>
         <p class="dim">${BOND[L - 1][1]}</p>
       </div></div>
       <div class="bar"><i style="width:${hi ? Math.round((S.xp - lo) / (hi - lo) * 100) : 100}%"></i></div>
@@ -1612,7 +1623,7 @@ const STD = {
   goblet_squat: ['w', .5, 'L'], db_rdl: ['w', .5, 'L'], db_lunge: ['w', .35, 'L'], db_calf: ['w', .6, 'L'], kb_swing: ['w', .45, 'L'],
   db_bench: ['w', .38, 'U'], db_floor: ['w', .35, 'U'], db_press: ['w', .27, 'U'], db_row: ['w', .45, 'U'], db_curl: ['w', .22, 'U'],
   db_lateral: ['w', .12, 'U'], db_rear: ['w', .11, 'U'], db_ext: ['w', .3, 'U'],
-  pushup: ['r', 35, 'U'], knee_pushup: ['r', 40, 'U'], wall_pushup: ['r', 60, 'U'], incline_pushup: ['r', 40, 'U'], decline_pushup: ['r', 25, 'U'],
+  pushup: ['r', 35, 'U'], knee_pushup: ['r', 40, 'U'], pushup_bar: ['r', 30, 'U'], knee_pushup_bar: ['r', 34, 'U'], wall_pushup: ['r', 60, 'U'], incline_pushup: ['r', 40, 'U'], decline_pushup: ['r', 25, 'U'],
   diamond: ['r', 20, 'U'], pike_pushup: ['r', 15, 'U'], pullup: ['r', 12, 'U'], dead_hang: ['s', 60, 'U'], bench_dip: ['r', 30, 'U'],
   bw_squat: ['r', 50, 'L'], chair_squat: ['r', 40, 'L'], split_squat: ['r', 25, 'L'], reverse_lunge: ['r', 25, 'L'], bulgarian: ['r', 18, 'L'],
   step_up: ['r', 25, 'L'], pistol_box: ['r', 12, 'L'], jump_squat: ['r', 30, 'L'], glute_bridge: ['r', 40, 'L'], single_bridge: ['r', 20, 'L'],
@@ -1751,6 +1762,7 @@ function vSettings() {
       <h2>トレーナー猫</h2>
       <div class="obcat">${myCat('happy')}</div>
       <div class="field"><label for="catName">名前</label><input class="inp" id="catName" data-cat="name" value="${esc(p.cat.name)}" maxlength="10"></div>
+      <div class="field"><span class="flabel">性別</span><div class="chips">${[['male', 'オス ♂'], ['female', 'メス ♀']].map(([k, l]) => `<button class="chip" data-act="catset" data-k="sex" data-v="${k}" aria-pressed="${(p.cat.sex || 'male') === k}">${l}</button>`).join('')}</div></div>
       <div class="field"><span class="flabel">性格</span><div class="chips">${Object.entries(PERS).map(([k, l]) => `<button class="chip" data-act="catset" data-k="per" data-v="${k}" aria-pressed="${p.cat.per === k}">${l}</button>`).join('')}</div></div>
     </section>
     <section class="card">
@@ -1794,7 +1806,8 @@ function vOnboard() {
   let body = '';
   if (step === 0) {
     body = `<div class="obcat">${catSVG({ mood: d.cat.per === 'hot' ? 'fire' : 'happy' })}</div>
-      <div class="bubble"><b>${esc(d.cat.name || 'トレーナー')}</b><p>${{ gentle: 'はじめましてにゃ。きみ専属のトレーナーになるにゃ。家にある道具で、続けられるメニューをいっしょに作ろうにゃ。', tsundere: 'べ、別にきみのために来たんじゃないにゃ。…でもトレーナーくらいはしてやるにゃ。', hot: 'はじめましてにゃ！きみの筋肉、ぼくが全力で応援するにゃ！' }[d.cat.per]}</p></div>
+      <div class="bubble"><b>${esc(d.cat.name || 'トレーナー')}</b><p>${{ gentle: `はじめましてにゃ。${catI(d.cat)}がきみ専属のトレーナーになるにゃ。家にある道具で、続けられるメニューをいっしょに作ろうにゃ。`, tsundere: `べ、別にきみのために来たんじゃないにゃ。…でも${catI(d.cat)}がトレーナーくらいはしてやるにゃ。`, hot: `はじめましてにゃ！きみの筋肉、${catI(d.cat)}が全力で応援するにゃ！` }[d.cat.per]}</p></div>
+      <div class="field"><span class="flabel">性別</span><div class="chips">${[['male', 'オス ♂'], ['female', 'メス ♀']].map(([k, l]) => `<button class="chip" data-act="dcat" data-k="sex" data-v="${k}" aria-pressed="${(d.cat.sex || 'male') === k}">${l}</button>`).join('')}</div></div>
       <div class="field"><span class="flabel">性格</span><div class="chips">${Object.entries(PERS).map(([k, l]) => `<button class="chip" data-act="dcat" data-k="per" data-v="${k}" aria-pressed="${d.cat.per === k}">${l}</button>`).join('')}</div></div>
       <div class="field"><label for="d-catname">猫の名前</label><input class="inp" id="d-catname" data-dk="cat.name" value="${esc(d.cat.name)}" maxlength="10"></div>`;
   } else if (step === 1) {
@@ -1848,7 +1861,7 @@ function render() {
 }
 function go(v) { view = v; if (v === 'home') homeMsg = null; render(); window.scrollTo(0, 0); }
 function newDraft() {
-  draft = { name: '', sex: 'none', age: 30, height: 165, weight: 60, goal: 'health', level: 'beginner', equipment: [], limits: [], days: 3, minutes: 20, cat: { name: 'にゃんだ', per: 'gentle' }, agree: false };
+  draft = { name: '', sex: 'none', age: 30, height: 165, weight: 60, goal: 'health', level: 'beginner', equipment: [], limits: [], days: 3, minutes: 20, cat: { name: 'にゃんだ', sex: 'male', per: 'gentle' }, agree: false };
 }
 let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2400); }
@@ -2165,6 +2178,7 @@ document.addEventListener('input', e => {
 function migrate() {
   if (S.profile && S.profile.cat.name === 'ムギ') S.profile.cat.name = 'にゃんだ';
   if (S.profile && S.profile.cat.coat) delete S.profile.cat.coat;
+  if (S.profile && !S.profile.cat.sex) S.profile.cat.sex = 'male';
   if (S.acc) { const m = { collar: 'collar', band: 'band', glasses: 'glasses', crown: 'crown' }[S.acc]; if (m) { if (!S.items.includes(m)) S.items.push(m); S.equip[GEARM[m].slot] = m; } delete S.acc; }
   S.items = S.items.filter(id => GEARM[id]);
   for (const k in S.equip) if (!GEARM[S.equip[k]]) delete S.equip[k];

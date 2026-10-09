@@ -22,7 +22,7 @@ const REF = [
   ['split', 1, 'knee', 75, 105], ['split', 1, 'knee', 75, 115, 'F'],
   ['revlunge', 1, 'knee', 75, 105], ['bulgarian', 1, 'knee', 75, 110],
   ['pushup', 0, 'elbow', 0, 20], ['pushup', 1, 'elbow', 70, 140], ['pushup', 0, 'hip', -12, 12], ['pushup', 1, 'hip', -12, 12],
-  ['kneepush', 1, 'elbow', 70, 140], ['plank', 0, 'hip', -12, 12],
+  ['kneepush', 1, 'elbow', 70, 140], ['pushbar', 0, 'elbow', 0, 20], ['pushbar', 1, 'elbow', 85, 150], ['pushbar', 0, 'hip', -12, 12], ['pushbar', 1, 'hip', -12, 12], ['kneepushbar', 1, 'elbow', 80, 150], ['plank', 0, 'hip', -12, 12],
   ['benchpress', 0, 'elbow', 70, 120], ['benchpress', 1, 'elbow', 0, 20],
   ['ohp', 0, 'elbow', 70, 150], ['ohp', 1, 'elbow', 0, 20],
   ['curl', 0, 'elbow', 0, 20], ['curl', 1, 'elbow', 120, 160],

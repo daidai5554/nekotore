@@ -19,7 +19,7 @@ const set1 = (P, k, v) => { const [a, b] = k.split('.'); if (b === undefined) P[
 // body=頭からかかとまで一直線（胴の角度 t と脚の角度 t-180 を連動）
 const get = (P, k) => k === 'body' ? P.t : get1(P, expand(k)[0]);
 const set = (P, k, v) => { if (k === 'body') { P.t = v; ['thN', 'snN', 'thF', 'snF'].forEach(x => P[x] = v - 180); } else expand(k).forEach(x => set1(P, x, v)); };
-const tops = (m.props || []).filter(p => ['box', 'bench', 'chair'].includes(p.k)).map(p => [p.x, p.x + p.w, p.y]);
+const tops = (m.props || []).filter(p => ['box', 'bench', 'chair', 'handle'].includes(p.k)).map(p => [p.x, p.x + p.w, p.y]);
 function cost(P, verbose) {
   const J = solve(m, P); let c = 0; const why = [];
   const pen = (w, v, s) => { if (v > 0) { c += w * v; if (verbose) why.push(`${s}:${v.toFixed(1)}`); } };

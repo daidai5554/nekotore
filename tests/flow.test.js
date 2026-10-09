@@ -37,6 +37,15 @@ step('種目ごとの伸び（推定最大重量）', () => {
   const html = app.strengthHTML();
   if (!html.includes('16.0kg') || !html.includes('+2.7')) throw new Error('推定最大重量の計算が違う（12kg×10回 → 16.0kg、差+2.7のはず）');
 });
+step('猫の性別で一人称が変わる', () => {
+  const cat = app.S.profile.cat; cat.sex = 'female'; cat.per = 'gentle';
+  let hit = false; for (let i = 0; i < 300 && !hit; i++) { const t = app.say('pet'); if (t.includes('ぼく')) throw new Error('メスなのに「ぼく」'); if (t.includes('わたし')) hit = true; }
+  if (!hit) throw new Error('メスの一人称「わたし」が出ない');
+  cat.sex = 'male'; cat.per = 'hot'; hit = false;
+  for (let i = 0; i < 300 && !hit; i++) { const t = app.say('pet'); if (t.includes('おれ')) hit = true; }
+  if (!hit) throw new Error('オス・熱血の一人称「おれ」が出ない');
+  app.view = 'status'; app.render(); app.view = 'settings'; app.render();
+});
 step('作り直し', () => { app.A.editProfile(); app.draft.days = 5; app.step = 4; app.A.obNext({}); if (app.S.program.days.length !== 5) throw new Error('週5回のメニューにならない'); });
 errs.forEach(e => console.log(' - ' + e));
 console.log(errs.length ? `画面の流れ：問題 ${errs.length}件` : '画面の流れ：すべてOK');

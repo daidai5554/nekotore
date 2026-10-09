@@ -30,7 +30,7 @@ try {
   if (!S.items.includes('collar')) errs.push('なかよし度Lv2のごほうび（鈴の首輪）がもらえていない');
   const pl = app.player();
   if (!(pl.exp > 0)) errs.push('古い記録から経験値が計算されない');
-  if (S.program.ver !== 3 || !S.programNote) errs.push('古いメニューが新しい作り方で作り直されていない');
+  if (S.program.ver !== 4 || !S.programNote) errs.push('古いメニューが新しい作り方で作り直されていない');
   for (const v of ['home', 'status', 'equip', 'plan', 'log', 'settings']) { app.view = v; app.render(); }
   app.startSession(false); app.finishSession();
 } catch (e) { errs.push('読みこみで例外: ' + e.message); }
