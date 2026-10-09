@@ -6,7 +6,8 @@
 <meta name="theme-color" content="#D4426F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>ねこトレ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2069,7 +2070,8 @@ function migrate() {
 }
 migrate();
 render();
-try { if ('serviceWorker' in navigator && location.protocol === 'https:' && $('link[rel="manifest"]')) navigator.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
+// ホーム画面に追加したアプリとして公開したときだけ、オフライン用の Service Worker を登録する（https か localhost）
+try { if ('serviceWorker' in navigator && window.isSecureContext && $('link[rel="manifest"]')) navigator.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
 </script>
 </body>
 </html>

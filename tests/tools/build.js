@@ -1,8 +1,18 @@
-// 公開用ファイルを作る：index.html から文書の外枠（doctype・head・body・PWA用タグ）を外して dist/nekotore.html に書き出す
+// 公開用ファイルを作る
+//  1) dist/nekotore.html … claude.ai Artifact 用（文書の外枠・PWA用タグを外したもの）
+//  2) public/            … スマホアプリ（PWA）として公開するフォルダ。中身をそのままホスティングに置く
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..', '..');
 const src = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const out = src.split('\n').filter(l => !/^<!doctype html>$|^<html lang|^<\/?head>$|^<\/?body>$|^<\/html>$|^<meta |rel="manifest"|apple-touch-icon/.test(l)).join('\n');
+
+const out = src.split('\n').filter(l => !/^<!doctype html>$|^<html lang|^<\/?head>$|^<\/?body>$|^<\/html>$|^<meta |rel="manifest"|apple-touch-icon|rel="icon"/.test(l)).join('\n');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist', 'nekotore.html'), out);
 console.log(`dist/nekotore.html を作成（${(out.length / 1024).toFixed(0)}KB）`);
+
+const pub = path.join(root, 'public');
+fs.rmSync(pub, { recursive: true, force: true });
+fs.mkdirSync(path.join(pub, 'icons'), { recursive: true });
+for (const f of ['index.html', 'manifest.json', 'sw.js']) fs.copyFileSync(path.join(root, f), path.join(pub, f));
+for (const f of fs.readdirSync(path.join(root, 'icons'))) fs.copyFileSync(path.join(root, 'icons', f), path.join(pub, 'icons', f));
+console.log(`public/ を作成（${fs.readdirSync(pub).length}項目）`);
